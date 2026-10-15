@@ -121,5 +121,3 @@ This tool is for **educational purposes only**. Using self-bots violates Discord
 ### Dashboard Mobile
 ![Dashboard](dashboard/static/assets/neura-mob.jpg) -->
 =======
-# yulee-self
->>>>>>> 5122390c0f183a5f50420043927739b8aadbdb78
