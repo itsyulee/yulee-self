@@ -540,7 +540,7 @@ def test_security():
     sec = bot.get_cog('Security')
     if sec:
         asyncio.run_coroutine_threadsafe(sec.play_beep(), bot.loop)
-        sec._show_desktop_notification("Test: Neura Security Alert working!")
+        sec._show_desktop_notification("Test: YULEESELF Security Alert working!")
         sec._send_webhook("SYSTEM TEST", "This is a test of your security notification system. All systems are operational.")
         return jsonify({'status': 'success', 'message': 'Test signals sent'})
     

@@ -2,8 +2,8 @@
 
 set -Eeuo pipefail
 
-APP_NAME="NeuraSelf"
-REPO_URL="https://github.com/routo-loop/neura-self.git"
+APP_NAME="YULEESELF"
+REPO_URL="https://github.com/itsyulee/yulee-self.git"
 
 RED="\033[1;31m"
 GREEN="\033[1;32m"
@@ -47,16 +47,16 @@ case "$PLATFORM" in
             read -p "Press ENTER after you have allowed storage permission..."
         fi
         if [ -d "$HOME/storage/downloads" ]; then
-            INSTALL_DIR="$HOME/storage/downloads/neuraself"
+            INSTALL_DIR="$HOME/storage/downloads/yuleeself"
         else
-            INSTALL_DIR="$HOME/neuraself"
+            INSTALL_DIR="$HOME/yuleeself"
         fi
         ;;
     macos)
         if command -v xdg-user-dir >/dev/null 2>&1; then
-            INSTALL_DIR="$(xdg-user-dir DOWNLOAD)/neuraself"
+            INSTALL_DIR="$(xdg-user-dir DOWNLOAD)/yuleeself"
         else
-            INSTALL_DIR="$HOME/Downloads/neuraself"
+            INSTALL_DIR="$HOME/Downloads/yuleeself"
         fi
         ;;
     linux)
@@ -67,7 +67,7 @@ case "$PLATFORM" in
         else
             BASE_DIR="$HOME"
         fi
-        INSTALL_DIR="$BASE_DIR/neuraself"
+        INSTALL_DIR="$BASE_DIR/yuleeself"
         ;;
 esac
 
@@ -181,23 +181,23 @@ if [ -d "$INSTALL_DIR" ]; then
         cd "$INSTALL_DIR"
         git pull || fail "Update failed"
     else
-        fail "Installation directory exists but is not a NeuraSelf repository"
+        fail "Installation directory exists but is not a YULEESELF repository"
     fi
 else
-    info "Downloading NeuraSelf"
+    info "Downloading YULEESELF"
     git clone "$REPO_URL" "$INSTALL_DIR" || fail "Clone failed"
 fi
 
 cd "$INSTALL_DIR"
 
-if [ ! -f "neura_setup.py" ]; then
-    fail "neura_setup.py not found"
+if [ ! -f "setup.py" ]; then
+    fail "setup.py not found"
 fi
 
 info "Starting setup (--quick)"
-"$PY_CMD" neura_setup.py --quick || fail "Setup failed"
+"$PY_CMD" setup.py --quick || fail "Setup failed"
 
 echo
-ok "NeuraSelf installed successfully"
+ok "YULEESELF installed successfully"
 echo -e "${CYAN}Location:${RESET} $INSTALL_DIR"
-echo -e "${CYAN}Run manually:${RESET} cd \"$INSTALL_DIR\" && $PY_CMD neura_setup.py"
+echo -e "${CYAN}Run manually:${RESET} cd \"$INSTALL_DIR\" && $PY_CMD setup.py"

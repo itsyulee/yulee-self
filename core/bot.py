@@ -611,7 +611,9 @@ class NeuraBot(commands.Bot):
 
     def check_version(self):
         CURRENT_VERSION = "2.4.4" 
-        VERSION_URL = "https://raw.githubusercontent.com/routo-loop/neura_status_api/main/version.json"
+        VERSION_URL = os.environ.get("YULEESELF_VERSION_URL")
+        if not VERSION_URL:
+            return
         
         self.log("SYS", "Checking for updates...")
         try:
@@ -631,7 +633,7 @@ class NeuraBot(commands.Bot):
                     self.console.print(Align.center(f"\n[bold cyan]CHANGELOG:[/bold cyan]\n[white]{changelog}[/white]\n"))
                     self.console.print(Align.center(f"[bold red]{line}[/bold red]"))
                     self.console.print(Align.center("[bold yellow]PLEASE UPDATE TO CONTINUE:[/bold yellow]"))
-                    self.console.print(Align.center("[bold cyan]https://github.com/routo-loop/neura-self[/bold cyan]"))
+                    self.console.print(Align.center("[bold cyan]https://github.com/itsyulee/yulee-self[/bold cyan]"))
                     self.console.print(Align.center(f"[bold red]{line}[/bold red]"))
                     self.console.print("\n")
                     sys.exit(0)
@@ -729,7 +731,7 @@ class NeuraBot(commands.Bot):
 
     async def neura_queue_worker(self):
         await self.wait_until_ready()
-        self.log("SYS", "NeuraQueue Worker started.")
+        self.log("SYS", "YULEESELF Queue Worker started.")
         while self.active:
             try:
                 priority, ts, content, options = await self.neura_queue.get()
@@ -758,7 +760,7 @@ class NeuraBot(commands.Bot):
                         timestamp = gem_check_val.get("time") if isinstance(gem_check_val, dict) else (time.time() if isinstance(gem_check_val, bool) else gem_check_val)
                         
                         if timestamp and time.time() - timestamp > 20:
-                            self.log("WARN", "NeuraGems check timed out. Resuming queue.")
+                            self.log("WARN", "YULEESELF Gems check timed out. Resuming queue.")
                             state.checking_gems[self.user_id] = False
                             gem_check_val = False
                     
@@ -844,7 +846,7 @@ class NeuraBot(commands.Bot):
 
     async def neura_scheduler_worker(self):
         await self.wait_until_ready()
-        self.log("SYS", "NeuraScheduler started.")
+        self.log("SYS", "YULEESELF Scheduler started.")
         while self.active:
             try:
                 if self.paused:

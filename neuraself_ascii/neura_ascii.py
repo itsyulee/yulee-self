@@ -27,27 +27,14 @@ from rich.live import Live
 
 AUTHOR = "ROUTO"
 
-NEURA_MAIN_LOGO = f"""[#ff0000]      ▄      ▄███▄     ▄   █▄▄▄▄ ██  [/#ff0000]
-[#ff0000]      █      █▀   ▀     █  █  ▄▀ █ █ [/#ff0000]
-[#ff0000]      ██   █ ██▄▄    █   █ █▀▀▌  █▄▄█[/#ff0000]
-[#ff0000]      █ █  █ █▄   ▄▀ █   █ █  █  █  █[/#ff0000]
-[#ff0000]      █  █ █ ▀███▀   █▄ ▄█   █      █[/#ff0000]
-[#ff0000]      █   ██          ▀▀▀   ▀      █ [/#ff0000]
-[#ff0000]                                    ▀  [/#ff0000]
-[#ff0000]┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈[/#ff0000]
-[bold cyan]   N E U R A   S E L F[/bold cyan]  [white]•[/white]  [bold cyan]Made by {AUTHOR}[/bold cyan]
-[#ff0000]┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈[/#ff0000]"""
+NEURA_MAIN_LOGO = """[bold #82ddf7]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/bold #82ddf7]
+[bold #f0fbff]                 Y U L E E S E L F[/bold #f0fbff]
+[#82ddf7]                  OwO Automation[/#82ddf7]
+[white]              Customized by zOnisdev[/white]
+[dim]               Original code: Routo[/dim]
+[bold #82ddf7]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/bold #82ddf7]"""
 
-NEURA_SETUP_LOGO = f"""[red]      ▄      ▄███▄     ▄   █▄▄▄▄ ██  [/red]
-[red]      █      █▀   ▀     █  █  ▄▀ █ █ [/red]
-[red]      ██   █ ██▄▄    █   █ █▀▀▌  █▄▄█[/red]
-[red]      █ █  █ █▄   ▄▀ █   █ █  █  █  █[/red]
-[red]      █  █ █ ▀███▀   █▄ ▄█   █      █[/red]
-[red]      █   ██          ▀▀▀   ▀      █ [/red]
-[red]                                    ▀  [/red]
-[bold blue]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/bold blue]
-[bold cyan]      n e u r a   s e t u p      Made by {AUTHOR}      [/bold cyan]
-[bold blue]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/bold blue]"""
+NEURA_SETUP_LOGO = NEURA_MAIN_LOGO.replace("OwO Automation", "Setup Manager ")
 
 NOISE = "█▓▒░@#$%&/=+*<>"
 

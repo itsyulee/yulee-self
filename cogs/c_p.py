@@ -120,7 +120,7 @@ class NeuraCursePray(commands.Cog):
     async def register_actions(self):
         cmds_cfg = self.bot.config.get("commands", {})
         if cmds_cfg.get("curse", {}).get("enabled", False) or cmds_cfg.get("pray", {}).get("enabled", False):
-            self.bot.log("SYS", "NeuraCursePray Module configured.")
+            self.bot.log("SYS", "YULEESELF CursePray Module configured.")
             
             delay = 305
             rb_cfg = self.bot.config.get('reactionBot', {})

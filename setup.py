@@ -350,7 +350,7 @@ async def setup_menu():
             if not proxies:
                 if Confirm.ask("import proxies now? (optional)", default=False):
                     await proxy_manager_cli(bulk_only=True)
-            console.print("\n[green]launching neura...[/green]")
+            console.print("\n[green]launching YULEESELF...[/green]")
             time.sleep(1)
             import neura
             await neura.main()
@@ -370,7 +370,7 @@ async def setup_menu():
                 console.print("[dim]no setup log yet.[/dim]")
             input("\npress enter...")
         else:
-            console.print("\n[magenta]thank you for using yuleeself.[/magenta]")
+            console.print("\n[magenta]thank you for using YULEESELF.[/magenta]")
             break
 
 async def quick_start():
@@ -390,12 +390,12 @@ async def quick_start():
     proxies = engine.load_proxies()
     if not proxies:
         console.print("[yellow]No proxies found. You can run without proxies (direct connection).[/yellow]")
-    console.print("[green]Launching YuleeSelf...[/green]")
+    console.print("[green]Launching YULEESELF...[/green]")
     import neura
     await neura.main()
 
 def main():
-    parser = argparse.ArgumentParser(description="YuleeSelf Setup")
+    parser = argparse.ArgumentParser(description="YULEESELF Setup")
     parser.add_argument("--quick", action="store_true", help="Run quick setup and launch bot")
     parser.add_argument("--setup-only", action="store_true", help="Run setup only (no launch)")
     args = parser.parse_args()

@@ -217,7 +217,7 @@ class HuntBot(commands.Cog):
             try:
                 import modules.nhuntbotsolver as solver
                 if self.bot.session and img_url:
-                    self.bot.log("AutoHunt", "Attempting NeuraSolver auto-solve...")
+                    self.bot.log("AutoHunt", "Attempting YULEESELF Solver auto-solve...")
                     answer = await solver.solveHbCaptcha(img_url, self.bot.session)
                     
                     if answer and len(answer) > 0:

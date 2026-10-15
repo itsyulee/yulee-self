@@ -172,7 +172,7 @@ class NeuraGems(commands.Cog):
                         if state.checking_gems.get(self.bot.user_id):
                             return
 
-                        self.bot.log("SYS", "[NeuraGems] No active gems detected! Triggering inventory check.")
+                        self.bot.log("SYS", "[YULEESELF Gems] No active gems detected! Triggering inventory check.")
                         state.checking_gems[self.bot.user_id] = {
                             "time": time.time(),
                             "types": actually_missing
@@ -199,7 +199,7 @@ class NeuraGems(commands.Cog):
                 if g_type in state.missing_gems_cache[self.bot.user_id]:
                     state.missing_gems_cache[self.bot.user_id].remove(g_type)
                 
-                self.bot.log("SUCCESS", f"[NeuraGems] Confirmation: {g_type} activated. Cache updated.")
+                self.bot.log("SUCCESS", f"[YULEESELF Gems] Confirmation: {g_type} activated. Cache updated.")
 
                 self.last_inv_time = time.time()
                 state.checking_gems[self.bot.user_id] = False
@@ -233,7 +233,7 @@ class NeuraGems(commands.Cog):
                     if state.checking_gems.get(self.bot.user_id):
                         return
 
-                    self.bot.log("SYS", f"[NeuraGems] Active gems detected, but missing: {', '.join(actually_missing)}. Checking inventory...")
+                    self.bot.log("SYS", f"[YULEESELF Gems] Active gems detected, but missing: {', '.join(actually_missing)}. Checking inventory...")
                     state.checking_gems[self.bot.user_id] = {
                         "time": time.time(),
                         "types": actually_missing
@@ -297,11 +297,11 @@ class NeuraGems(commands.Cog):
                     if has_any:
                         if g_type in state.missing_gems_cache[self.bot.user_id]:
                             state.missing_gems_cache[self.bot.user_id].remove(g_type)
-                            self.bot.log("SYS", f"[NeuraGems] {g_type} found in inventory, removed from missing cache.")
+                            self.bot.log("SYS", f"[YULEESELF Gems] {g_type} found in inventory, removed from missing cache.")
                     else:
                         if g_type not in state.missing_gems_cache[self.bot.user_id]:
                             state.missing_gems_cache[self.bot.user_id].append(g_type)
-                            self.bot.log("WARN", f"[NeuraGems] {g_type} not found in inventory, added to missing cache.")
+                            self.bot.log("WARN", f"[YULEESELF Gems] {g_type} not found in inventory, added to missing cache.")
 
                 if to_use:
                     cmd_ids = [gid if not gid.startswith('0') else gid[1:] for gid in to_use]
@@ -312,10 +312,10 @@ class NeuraGems(commands.Cog):
                         st['gems_used'] = st.get('gems_used', 0) + len(to_use)
                         state.save_account_stats()
                     await self.bot.neura_enqueue(use_cmd, priority=2)
-                    self.bot.log("SUCCESS", f"[NeuraGems] Equipped: {use_cmd}")
+                    self.bot.log("SUCCESS", f"[YULEESELF Gems] Equipped: {use_cmd}")
                     self.last_inv_time = time.time()
                 else:
-                    self.bot.log("WARN", f"[NeuraGems] Inventory checked, but no matching gems found for: {missing_types}")
+                    self.bot.log("WARN", f"[YULEESELF Gems] Inventory checked, but no matching gems found for: {missing_types}")
 
     async def register_actions(self):
         pass

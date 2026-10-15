@@ -1,18 +1,18 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
-title NeuraSelf Installer
+title YULEESELF Installer
 cd /d "%~dp0"
 chcp 65001 >nul
 
-set "INSTALL_DIR=%USERPROFILE%\Desktop\NeuraSelf"
-set "REPO_URL=https://github.com/routo-loop/neura-self.git"
+set "INSTALL_DIR=%USERPROFILE%\Desktop\YULEESELF"
+set "REPO_URL=https://github.com/itsyulee/yulee-self.git"
 set "PYTHON_VER=3.10.11"
 set "PYTHON_URL=https://www.python.org/ftp/python/%PYTHON_VER%/python-%PYTHON_VER%-amd64.exe"
 
 color 0B
 
 echo.
-echo  [SYSTEM] NeuraSelf Installer
+echo  [SYSTEM] YULEESELF Installer
 echo.
 
 set "PY_CMD="
@@ -139,7 +139,7 @@ echo  [#] Launching setup...
 
 pushd "%INSTALL_DIR%"
 
-%PY_CMD% neura_setup.py --quick
+%PY_CMD% setup.py --quick
 
 if errorlevel 1 (
     popd

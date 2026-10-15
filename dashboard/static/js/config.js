@@ -24,6 +24,10 @@ async function loadConfig() {
     const q = currentAccountId ? `?id=${currentAccountId}` : '';
     const r = await fetch(`/api/settings${q}`);
     currentConfig = await r.json();
+    const desktopNotification = currentConfig.security?.notifications?.desktop;
+    if (desktopNotification?.title === 'Neura Security Alert') {
+        desktopNotification.title = 'YULEESELF Security Alert';
+    }
     originalConfig = JSON.parse(JSON.stringify(currentConfig));
     renderSettings(currentConfig);
     checkDirty();

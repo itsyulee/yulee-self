@@ -46,7 +46,7 @@ engine = NeuraSetupEngine()
 if not engine.environment_healthy():
     console.print("[yellow]Environment not healthy – running setup...[/yellow]")
     if not engine.run_full_setup(force_bootstrap=True):
-        console.print("[red]Setup failed. Please run 'python neura_setup.py' manually.[/red]")
+        console.print("[red]Setup failed. Please run 'python setup.py' manually.[/red]")
         sys.exit(1)
     console.print("[green]Setup complete. Restarting...[/green]")
     os.execv(sys.executable, [sys.executable] + sys.argv)
@@ -85,14 +85,14 @@ async def main():
         state.load_account_stats()
         console.print(f"[cyan]Config Directory:[/cyan] {state.CONFIG_DIR}")
         console.print(f"[cyan]Accounts File:[/cyan] {os.path.join(state.CONFIG_DIR, 'accounts.json')}\n")
-        console.print("\n[bold cyan]1.[/bold cyan] Start YuleeSelf")
+        console.print("\n[bold cyan]1.[/bold cyan] Start YULEESELF")
         console.print("[bold cyan]2.[/bold cyan] Manage Accounts")
         console.print("[bold cyan]3.[/bold cyan] Exit")
         from rich.prompt import Prompt
         choice = Prompt.ask("\nSelect option", choices=["1", "2", "3"], default="1")
         if choice == "2":
-            import neura_setup
-            await neura_setup.account_manager()
+            import setup
+            await setup.account_manager()
             continue
         elif choice == "3":
             console.print("\n[yellow]Shutting down. See you next time![/yellow]")
