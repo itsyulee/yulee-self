@@ -160,6 +160,33 @@ class UserStore:
                        (int(enabled), expires, hashed, uid))
         return self.get(uid)
 
+    def delete(self, uid):
+        """Permanently delete a non-admin login and its private workspace."""
+        path = self.directory(uid)
+        tenants = self.root / 'tenants'
+        if tenants.is_symlink() or path.is_symlink():
+            raise ValueError('Thư mục tài khoản không hợp lệ.')
+        tombstone = None
+        try:
+            with self.db() as db:
+                db.execute('BEGIN IMMEDIATE')
+                row = db.execute('SELECT username, role FROM users WHERE id=?', (uid,)).fetchone()
+                if not row:
+                    raise ValueError('Không tìm thấy tài khoản.')
+                if row['role'] != 'user':
+                    raise ValueError('Không thể xóa tài khoản quản trị viên.')
+                if path.exists():
+                    tombstone = tenants / ('.deleting-' + uid + '-' + secrets.token_hex(8))
+                    path.rename(tombstone)
+                db.execute('DELETE FROM login_failures WHERE key=?', ('name:' + row['username'].lower(),))
+                db.execute('DELETE FROM users WHERE id=?', (uid,))
+        except Exception:
+            if tombstone is not None and tombstone.exists() and not path.exists():
+                tombstone.rename(path)
+            raise
+        if tombstone is not None:
+            shutil.rmtree(tombstone)
+
     def authenticate(self, username, password, ip):
         # Also limit by IP so cycling usernames cannot bypass the limit.
         keys = ['ip:' + ip, 'name:' + username.lower()]

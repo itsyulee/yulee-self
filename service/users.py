@@ -161,31 +161,66 @@ class UserStore:
         return self.get(uid)
 
     def delete(self, uid):
-        """Permanently delete a non-admin login and its private workspace."""
+        """Back up a user's credentials and workspace before deleting their login."""
         path = self.directory(uid)
         tenants = self.root / 'tenants'
-        if tenants.is_symlink() or path.is_symlink():
-            raise ValueError('Thư mục tài khoản không hợp lệ.')
+        backup_root = self.root / 'backup'
+        if tenants.is_symlink() or path.is_symlink() or backup_root.is_symlink():
+            raise ValueError('Thư mục tài khoản hoặc sao lưu không hợp lệ.')
+
         tombstone = None
+        unfinished = None
+        backup_path = None
         try:
             with self.db() as db:
                 db.execute('BEGIN IMMEDIATE')
-                row = db.execute('SELECT username, role FROM users WHERE id=?', (uid,)).fetchone()
+                row = db.execute('SELECT * FROM users WHERE id=?', (uid,)).fetchone()
                 if not row:
                     raise ValueError('Không tìm thấy tài khoản.')
                 if row['role'] != 'user':
                     raise ValueError('Không thể xóa tài khoản quản trị viên.')
+
+                # Keep credentials private: this location is excluded from Git.
+                backup_root.mkdir(parents=True, exist_ok=True, mode=0o700)
+                backup_root.chmod(0o700)
+                backup_name = (row['username'] + '_' +
+                               time.strftime('%Y%m%d_%H%M%S', time.localtime()) + '_' +
+                               uid[:8] + '_' + secrets.token_hex(4))
+                unfinished = backup_root / ('.incomplete_' + backup_name)
+                backup_path = backup_root / backup_name
+                unfinished.mkdir(mode=0o700)
+
+                # Copy first. If copying fails, the DB transaction rolls back
+                # and the original workspace is left untouched.
+                if path.exists():
+                    shutil.copytree(path, unfinished / 'workspace', symlinks=True)
+                record = {'deleted_at': time.time(), 'user': dict(row)}
+                metadata = unfinished / 'user.json'
+                metadata.write_text(json.dumps(record, ensure_ascii=False, indent=2),
+                                    encoding='utf-8')
+                metadata.chmod(0o600)
+                unfinished.rename(backup_path)
+                unfinished = None
+
+                # Hide the original workspace until the DB transaction commits.
                 if path.exists():
                     tombstone = tenants / ('.deleting-' + uid + '-' + secrets.token_hex(8))
                     path.rename(tombstone)
-                db.execute('DELETE FROM login_failures WHERE key=?', ('name:' + row['username'].lower(),))
+                db.execute('DELETE FROM login_failures WHERE key=?',
+                           ('name:' + row['username'].lower(),))
                 db.execute('DELETE FROM users WHERE id=?', (uid,))
         except Exception:
             if tombstone is not None and tombstone.exists() and not path.exists():
                 tombstone.rename(path)
+            if unfinished is not None and unfinished.exists():
+                shutil.rmtree(unfinished)
             raise
+
+        # The backup stays in data/service/backup even after the live workspace
+        # is removed. On cleanup failure, the backup remains intact.
         if tombstone is not None:
             shutil.rmtree(tombstone)
+        return str(backup_path)
 
     def authenticate(self, username, password, ip):
         # Also limit by IP so cycling usernames cannot bypass the limit.
