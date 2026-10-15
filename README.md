@@ -1,11 +1,10 @@
-<<<<<<< HEAD
 <div align="center">
-  <img src="./dashboard/static/assets/yuleeselfbanner.png" alt="YuleeSelf Banner">
+  <img src="./dashboard/static/assets/neuraselfbanner.png" alt="NeuraSelf Banner">
   
   <br/>
   <br/>
 
-  <img src="https://readme-typing-svg.herokuapp.com/?font=Pacifico&size=40&pause=1000&color=FF0000&center=true&vCenter=true&random=false&width=600&lines=Advanced+OwO+Automation;Built+by+ROUTO;Star+the+repo" alt="YuleeSelf">
+  <img src="https://readme-typing-svg.herokuapp.com/?font=Pacifico&size=40&pause=1000&color=FF0000&center=true&vCenter=true&random=false&width=600&lines=Advanced+OwO+Automation;Built+by+ROUTO;Star+the+repo" alt="NeuraSelf">
   
   <br/>
   <br/>
@@ -110,7 +109,7 @@ This tool is for **educational purposes only**. Using self-bots violates Discord
 
 </div>
 
-<!-- ## Screenshots
+## Screenshots
 
 ### Login Page Screenshot
 ![Login](dashboard/static/assets/neura-auth.jpg)
@@ -119,5 +118,4 @@ This tool is for **educational purposes only**. Using self-bots violates Discord
 ![Dashboard](dashboard/static/assets/neura-desktop-dash.jpg)
 
 ### Dashboard Mobile
-![Dashboard](dashboard/static/assets/neura-mob.jpg) -->
-=======
+![Dashboard](dashboard/static/assets/neura-mob.jpg)
