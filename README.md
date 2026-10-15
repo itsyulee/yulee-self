@@ -10,7 +10,7 @@
   <br/>
 
   <a href="https://discord.gg/pbSffTnkME" target = "_blank">
-    <img src="https://invidget.switchblade.xyz/XQS473Scfe" alt="Discord Community"/>
+    <img src="https://www.cybernationuncensored.com/wp-content/uploads/2020/09/news-discord-join.jpg" alt="Discord Community"/>
   </a>
   
   <br/>
