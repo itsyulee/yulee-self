@@ -158,6 +158,25 @@ def create_app(data_root=None, manager_class=WorkerManager):
             manager.stop(uid)
         return jsonify(success=True, user=public_user(user))
 
+    @app.route('/api/admin/users/<uid>', methods=['DELETE'])
+    def delete_user(uid):
+        require_admin()
+        if uid == g.user['id']:
+            abort(400, 'Không thể tự xóa tài khoản đang đăng nhập.')
+        with manager.user_lock(uid):
+            user = store.get(uid)
+            if not user:
+                abort(404, 'Không tìm thấy tài khoản.')
+            if user['role'] != 'user':
+                abort(403, 'Không thể xóa tài khoản quản trị viên.')
+            manager.stop(uid)
+            try:
+                store.delete(uid)
+            except OSError:
+                app.logger.exception('Failed to clean deleted workspace for %s', uid)
+                return jsonify(success=False, error='Đã xóa tài khoản khỏi database nhưng không thể dọn sạch dữ liệu. Hãy kiểm tra log server.'), 500
+        return jsonify(success=True, message='Đã xóa hoàn toàn tài khoản và dữ liệu riêng.')
+
     @app.route('/api/<path:path>', methods=['GET', 'POST', 'DELETE'])
     def tenant_api(path):
         if path.startswith(('admin/', 'me/')) or path == 'me':

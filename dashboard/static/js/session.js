@@ -84,11 +84,33 @@ async function loadUsers() {
                 <strong>${escapeHtml(user.username)}</strong>
                 <span>${escapeHtml(user.role)} · ${status}</span>
                 <span>Hạn dùng: ${escapeHtml(deadline)}</span></div>
-                ${user.role === 'user' ? `<button class="btn-proxy-sm" onclick="editLoginUser(${index})">Chỉnh sửa</button>` : ''}
+                ${user.role === 'user' ? `<div style="display:flex;gap:8px;margin-left:auto;align-items:center"><button class="btn-proxy-sm" onclick="editLoginUser(${index})">Chỉnh sửa</button><button class="btn-proxy-sm" style="color:var(--danger, #ff4d4d)" onclick="deleteLoginUser(${index})">Xóa</button></div>` : ''}
             </div>`;
         }).join('');
     } catch (error) {
         list.textContent = error.message;
+    }
+}
+
+async function deleteLoginUser(index) {
+    const user = loginUsers[index];
+    if (!user || user.role !== 'user') return;
+    const typed = window.prompt(`XÓA VĨNH VIỄN tài khoản "${user.username}" và toàn bộ dữ liệu riêng (bao gồm token, proxy và lịch sử).\n\nNhập đúng tên đăng nhập để xác nhận:`);
+    if (typed === null) return;
+    if (typed !== user.username) {
+        window.alert('Tên đăng nhập không khớp. Tài khoản chưa bị xóa.');
+        return;
+    }
+    const result = document.getElementById('user-result');
+    try {
+        await sessionRequest(`/api/admin/users/${encodeURIComponent(user.id)}`, 'DELETE');
+        if (document.getElementById('login-user-id').value === user.id) {
+            resetUserForm();
+        }
+        await loadUsers();
+        result.textContent = `Đã xóa hoàn toàn tài khoản ${user.username}.`;
+    } catch (error) {
+        result.textContent = error.message;
     }
 }
 
