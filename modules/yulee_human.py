@@ -75,7 +75,7 @@ def validate_pair(min_val, max_val):
 
 class YuleeHuman:
     @staticmethod
-    async def yulee_send(bot, channel, content):
+    async def wait_for_break(bot):
         if getattr(bot, 'is_on_break', False):
             bot.log("STEALTH", "Waiting for existing break to finish...")
             while getattr(bot, 'is_on_break', False):
@@ -115,6 +115,12 @@ class YuleeHuman:
                             bot.is_on_break = False
                             bot.log("STEALTH", "Break finished – resuming")
 
+    @staticmethod
+    async def yulee_send(bot, channel, content, *, handle_break=True):
+        if handle_break:
+            await YuleeHuman.wait_for_break(bot)
+
+        stealth_cfg = bot.config.get('stealth', {})
         typing_enabled = stealth_cfg.get('typing_enabled', None)
         if typing_enabled is None:
             typing_cfg = stealth_cfg.get('typing', {})

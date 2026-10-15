@@ -246,6 +246,10 @@ class YuleeBot(commands.Bot):
             
         content = self._fix_command(content)
 
+        # Rest without holding the send lock so manual cash checks can proceed.
+        if self.config.get('stealth', {}).get('typing_enabled', False) and not skip_typing:
+            await YuleeHuman.wait_for_break(self)
+
         async with self.command_lock:
             current_time = time.time()
             if current_time < self.warmup_until:
@@ -300,7 +304,7 @@ class YuleeBot(commands.Bot):
             
             try:
                 if typing_enabled and not skip_typing:
-                    sent_ok = await YuleeHuman.yulee_send(self, channel, content)
+                    sent_ok = await YuleeHuman.yulee_send(self, channel, content, handle_break=False)
                     if not sent_ok:
                         return False
                 else:
