@@ -180,20 +180,6 @@ class YuleeSetupEngine:
                 json.dump({"proxies": []}, f, indent=4)
             self._console_log("ok", "created config/proxies.json")
 
-        auth_path = os.path.join(state.CONFIG_DIR, "auth.json")
-        if not os.path.exists(auth_path):
-            with open(auth_path, "w", encoding="utf-8") as f:
-                json.dump(
-                    {
-                        "username": "admin",
-                        "password": DEFAULT_PASSWORD,
-                        "secret_key": secrets.token_hex(32),
-                    },
-                    f,
-                    indent=4,
-                )
-            self._console_log("warn", "default dashboard password set – change it in config/auth.json")
-
         settings_path = os.path.join(state.CONFIG_DIR, "settings.json")
         if not os.path.exists(settings_path):
             default_settings = {
@@ -246,6 +232,8 @@ class YuleeSetupEngine:
     def _package_import_ok(self, name):
         import_map = {
             "flask": "flask",
+            "waitress": "waitress",
+            "werkzeug": "werkzeug",
             "requests": "requests",
             "aiohttp": "aiohttp",
             "rich": "rich",
@@ -369,7 +357,7 @@ class YuleeSetupEngine:
         return True
 
     def verify_imports(self):
-        modules = ["discord", "flask", "rich", "aiohttp", "aiohttp_socks", "requests", "numpy", "PIL", "nopecha"]
+        modules = ["discord", "flask", "waitress", "rich", "aiohttp", "aiohttp_socks", "requests", "numpy", "PIL", "nopecha"]
         missing = []
         for mod in modules:
             try:

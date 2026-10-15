@@ -8,3 +8,5 @@ playsound3==3.3.0
 python-dotenv==1.2.1
 aiohttp-socks==0.10.1
 nopecha
+waitress==3.0.2
+Werkzeug==2.3.8

@@ -24,7 +24,8 @@ import datetime
 from collections import deque
 import utils.history_tracker as ht
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CODE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.environ.get('YULEESELF_TENANT_DIR', CODE_DIR)
 CONFIG_DIR = os.path.join(BASE_DIR, 'config')
 DATA_DIR = os.path.join(BASE_DIR, 'data')
 

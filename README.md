@@ -67,6 +67,15 @@ Instead of sending just gambling commands, it has strategies (martingale ,flat) 
 
 ---
 
+## Multi-user dashboard
+
+See [Hướng dẫn nâng cấp và sử dụng](HUONG_DAN_MULTIUSER.md).
+
+- Admin manually creates, disables and extends customer logins from the dashboard.
+- Each login has private Discord accounts, proxies, settings and history.
+- Users add Discord/proxies and change their password on the web; setup no longer asks for Discord tokens.
+- Run `python setup.py --quick` to install and launch, or `python yulee.py` after installation.
+
 ## Installation
 
 ### Windows

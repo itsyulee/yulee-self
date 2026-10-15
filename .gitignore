@@ -123,3 +123,9 @@ Desktop.ini
 *.sqlite
 *.sqlite3
 *.db
+
+# Private multi-user service data and credentials
+data/service/
+config/auth.json
+config/accounts.json
+config/proxies.json

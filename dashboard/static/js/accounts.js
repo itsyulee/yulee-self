@@ -27,8 +27,10 @@ window.fetchAccounts = async function() {
                 currentAccountId = data[0].id;
             }
         }
+        if (!data.length) currentAccountId = null;
         renderAccountGrid();
-        updateGlobalAccountName(); 
+        updateGlobalAccountName();
+        if (!document.getElementById('account-form-modal')?.classList.contains('visible')) fetchAccountConfig();
     } catch (e) {
         console.error("Failed to fetch accounts", e);
         const grid = document.getElementById('accounts-grid');
@@ -42,11 +44,11 @@ function updateGlobalAccountName() {
     if (currentAccountId) {
         const acc = accountsList.find(a => a.id === currentAccountId);
         if (acc) {
-            nameEl.innerText = `ACCOUNT: ${acc.username}`;
+            nameEl.innerText = `ACCOUNT: ${escapeHtml(acc.username)}`;
             return;
         }
     }
-    nameEl.innerText = 'Loading account...';
+    nameEl.innerText = 'Chưa có tài khoản Discord online';
 }
 
 window.selectAccount = function(id) {
@@ -55,7 +57,7 @@ window.selectAccount = function(id) {
     renderAccountGrid();
     const acc = accountsList.find(a => a.id === id);
     if (acc) {
-        showToast(`Switched to account: ${acc.username}`, 'success');
+        showToast(`Switched to account: ${escapeHtml(acc.username)}`, 'success');
         updateGlobalAccountName(); 
     }
     if (lineChart) lineChart.data.datasets[0].data = Array(30).fill(0);
@@ -70,7 +72,7 @@ function renderAccountGrid() {
     const grid = document.getElementById('accounts-grid');
     if (!grid) return;
     if (!accountsList || !accountsList.length) {
-        grid.innerHTML = '<div class="no-data">No accounts online. Start the bot to see connected accounts here.</div>';
+        grid.innerHTML = '<div class="no-data">Chưa có tài khoản online. Thêm Discord ở bên dưới; bot sẽ tự kết nối.</div>';
         return;
     }
     grid.innerHTML = accountsList.map(acc => {
@@ -85,7 +87,7 @@ function renderAccountGrid() {
                 <div class="account-card-top">
                     ${avatar}
                     <div class="account-card-meta">
-                        <div class="account-card-name">${acc.username}</div>
+                        <div class="account-card-name">${escapeHtml(acc.username)}</div>
                         <div class="account-card-id">User ID · ${acc.id}</div>
                         <div class="account-card-status ${statusClass}">${statusLabel}</div>
                     </div>
@@ -138,9 +140,9 @@ function renderAccountConfigList() {
         return `
             <div class="account-config-card">
                 <div class="account-config-info">
-                    <strong>${acc.name || 'Unnamed'}</strong>
+                    <strong>${escapeHtml(acc.name || 'Unnamed')}</strong>
                     <span class="mono">${token}</span>
-                    <span class="dim">${proxy} · ${status}</span>
+                    <span class="dim">${escapeHtml(proxy)} · ${status} · ${escapeHtml(acc.runtime_status || '')}</span>
                 </div>
                 <div class="account-config-actions">
                     <button class="btn-proxy-sm" onclick="editAccountConfig(${i})">Edit</button>
@@ -206,12 +208,8 @@ window.saveAccountForm = async function() {
     }
     const entry = { name, channels, enabled, proxy_id };
     if (index >= 0 && accountConfigList[index]) {
-        entry.token = accountConfigList[index].token;
+        entry.config_id = accountConfigList[index].config_id;
         if (token) entry.token = token;
-        if (!entry.token) {
-            showToast('Token is required for new accounts', 'error');
-            return;
-        }
         accountConfigList[index] = entry;
     } else {
         if (!token) {
@@ -221,8 +219,7 @@ window.saveAccountForm = async function() {
         entry.token = token;
         accountConfigList.push(entry);
     }
-    await saveAccountConfigList();
-    hideAccountForm();
+    if (await saveAccountConfigList()) hideAccountForm();
 };
 
 async function saveAccountConfigList() {
@@ -234,12 +231,16 @@ async function saveAccountConfigList() {
         });
         const data = await res.json();
         if (data.status === 'success') {
-            showToast('Accounts saved — restart bot to apply', 'success');
+            showToast('Đã lưu. Các tài khoản của bạn đang kết nối lại.', 'success');
             await fetchAccountConfig();
+            await fetchProxies();
+            return true;
         } else {
             showToast(data.message || 'Save failed', 'error');
         }
     } catch (e) {
         showToast('Save failed', 'error');
     }
+    await fetchAccountConfig();
+    return false;
 }

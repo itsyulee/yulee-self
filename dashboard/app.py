@@ -18,7 +18,7 @@ YuleeSelf-UwU - https://github.com/itsyulee/yulee-self
 
 
 
-from flask import Flask, render_template, jsonify, request, session, redirect, url_for
+from flask import Flask, render_template, jsonify, request, session, redirect, url_for, abort, g
 from functools import wraps
 import threading
 import time
@@ -26,6 +26,8 @@ import json
 import logging
 import os
 import secrets
+import re
+from core.storage import write_json
 import core.state as state
 import utils.utils as utils
 import asyncio
@@ -53,62 +55,29 @@ except AttributeError:
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
-AUTH_FILE = os.path.join(state.CONFIG_DIR, 'auth.json')
-LOGIN_ATTEMPTS = {}
-BLOCK_DURATION = 300  
-MAX_ATTEMPTS = 5
+# This module is served only inside an authenticated, loopback-only tenant worker.
+WORKER_SECRET = os.environ.get('YULEESELF_WORKER_SECRET', '')
+app.secret_key = secrets.token_hex(32)
+app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024
 
-def load_auth_config():
-    if os.path.exists(AUTH_FILE):
-        try:
-            with open(AUTH_FILE, 'r') as f:
-                cfg = json.load(f)
-                
-            if cfg.get('secret_key', '').startswith("generate_a_random_long_secret_key_here_please"):
-                new_secret = secrets.token_hex(32)
-                cfg['secret_key'] = new_secret
-                with open(AUTH_FILE, 'w') as f:
-                    json.dump(cfg, f, indent=4)
-                
-            return cfg
-        except:
-            pass
-    return None
+@app.before_request
+def worker_access():
+    supplied = request.headers.get('X-Yulee-Worker', '')
+    if not WORKER_SECRET or not secrets.compare_digest(WORKER_SECRET, supplied):
+        abort(403)
+    g.internal_worker = True
 
-auth_cfg = load_auth_config()
-if auth_cfg:
-    app.secret_key = auth_cfg.get('secret_key', 'yuleeself_fallback_secret')
-else:
-    app.secret_key = 'temporary_secret_key'
+@app.errorhandler(ValueError)
+def invalid_value(error):
+    return jsonify(status='error', success=False, message=str(error)), 400
 
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'logged_in' not in session:
-            return redirect(url_for('login'))
+        if not getattr(g, 'internal_worker', False):
+            abort(403)
         return f(*args, **kwargs)
     return decorated_function
-
-def check_rate_limit(ip):
-    now = time.time()
-    if ip in LOGIN_ATTEMPTS:
-        attempts, block_time = LOGIN_ATTEMPTS[ip]
-        if block_time > now:
-            return False, int(block_time - now)
-        if now - block_time > BLOCK_DURATION: 
-             LOGIN_ATTEMPTS[ip] = [0, 0]
-    return True, 0
-
-def fail_login(ip):
-    now = time.time()
-    if ip not in LOGIN_ATTEMPTS:
-        LOGIN_ATTEMPTS[ip] = [1, 0]
-    else:
-        attempts, block_time = LOGIN_ATTEMPTS[ip]
-        attempts += 1
-        if attempts >= MAX_ATTEMPTS:
-            block_time = now + BLOCK_DURATION
-        LOGIN_ATTEMPTS[ip] = [attempts, block_time]
 
 def protect_large_ints(obj):
     if isinstance(obj, dict):
@@ -123,37 +92,6 @@ def protect_large_ints(obj):
 @login_required
 def home():
     return render_template('index.html')
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        ip = request.remote_addr
-        allowed, wait_time = check_rate_limit(ip)
-        
-        if not allowed:
-             return jsonify({'success': False, 'error': f'Too many failed attempts. Try again in {wait_time}s'})
-
-        data = request.json
-        cfg = load_auth_config()
-        
-        if not cfg:
-             return jsonify({'success': False, 'error': 'Auth config missing'})
-             
-        if data.get('username') == cfg.get('username') and data.get('password') == cfg.get('password'):
-            session['logged_in'] = True
-            session.permanent = True
-            if ip in LOGIN_ATTEMPTS: del LOGIN_ATTEMPTS[ip]
-            return jsonify({'success': True})
-        else:
-            fail_login(ip)
-            return jsonify({'success': False, 'error': 'Invalid Credentials'})
-            
-    return render_template('login.html')
-
-@app.route('/logout')
-def logout():
-    session.pop('logged_in', None)
-    return redirect(url_for('login'))
 
 @app.route('/api/accounts/list')
 @login_required
@@ -182,7 +120,7 @@ def get_bot(account_id):
     for bot in state.bot_instances:
         if bot.user and str(bot.user.id) == str(account_id):
             return bot
-    return state.bot_instances[0] if state.bot_instances else None
+    abort(404, 'Account not found')
 
 
 @app.route('/api/stats')
@@ -323,6 +261,8 @@ def get_analytics():
 @login_required
 def settings():
     account_id = request.args.get('id')
+    if account_id and not re.fullmatch(r'[0-9]{1,22}', account_id):
+        abort(400, 'Invalid account ID')
     
     if account_id:
         config_path = os.path.join(state.CONFIG_DIR, f'settings_{account_id}.json')
@@ -331,27 +271,26 @@ def settings():
         
     if request.method == 'POST':
         new_config = request.json
+        if not isinstance(new_config, dict):
+            abort(400, 'Invalid configuration')
         try:
             save_to_all = request.args.get('all_accounts') == 'true' or request.args.get('all') == 'true'
             
             if save_to_all:
                 global_path = os.path.join(state.CONFIG_DIR, 'settings.json')
-                with open(global_path, 'w') as f:
-                    json.dump(new_config, f, indent=4)
+                write_json(global_path, new_config)
                 
                 for filename in os.listdir(state.CONFIG_DIR):
                     if filename.startswith("settings_") and filename.endswith(".json"):
                         file_path = os.path.join(state.CONFIG_DIR, filename)
-                        with open(file_path, 'w') as f:
-                            json.dump(new_config, f, indent=4)
+                        write_json(file_path, new_config)
                 
                 for bot in state.bot_instances:
                     asyncio.run_coroutine_threadsafe(bot.sync_settings(new_config), bot.loop)
                 
                 state.log_command("SYS", "Settings updated for ALL accounts", "success")
             else:
-                with open(config_path, 'w') as f:
-                    json.dump(new_config, f, indent=4)
+                write_json(config_path, new_config)
                 
                 for bot in state.bot_instances:
                     if (not account_id) or (bot.user and str(bot.user.id) == str(account_id)):
@@ -380,61 +319,22 @@ def settings():
             return jsonify({})
 
 @app.route('/api/accounts/config', methods=['GET', 'POST'])
-@login_required
-def accounts_config_api():
-    accounts_path = os.path.join(state.CONFIG_DIR, 'accounts.json')
-    if request.method == 'POST':
-        payload = request.json or {}
-        accounts = payload.get('accounts', payload if isinstance(payload, list) else [])
-        try:
-            with open(accounts_path, 'w', encoding='utf-8') as f:
-                json.dump({'accounts': accounts}, f, indent=4)
-            from utils import proxy_manager
-            proxy_manager.sync_proxy_assignments()
-            for bot in state.bot_instances:
-                bot.accounts = accounts
-            state.log_command("SYS", "Accounts config updated. Restart recommended.", "success")
-            return jsonify({"status": "success"})
-        except Exception as e:
-            return jsonify({"status": "error", "message": str(e)}), 500
-
-    try:
-        from utils import proxy_manager
-        with open(accounts_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        accounts = data.get('accounts', [])
-        for acc in accounts:
-            if acc.get('token'):
-                acc['token_masked'] = proxy_manager.mask_token(acc['token'])
-        return jsonify({'accounts': accounts})
-    except Exception:
-        return jsonify({'accounts': []})
-
-
 @app.route('/api/accounts', methods=['GET', 'POST'])
 @login_required
-def accounts_api():
+def accounts_config_api():
+    from utils import proxy_manager
+    from service.accounts import ensure_ids, prepare_accounts, public_accounts
+    existing = proxy_manager.load_accounts()
+    if ensure_ids(existing):
+        proxy_manager.save_accounts(existing)
     if request.method == 'POST':
-        new_accounts = request.json
-        try:
-            accounts_path = os.path.join(state.CONFIG_DIR, 'accounts.json')
-            with open(accounts_path, 'w') as f:
-                json.dump(new_accounts, f, indent=4)
-
-            for bot in state.bot_instances:
-                bot.accounts = new_accounts.get('accounts', new_accounts) if isinstance(new_accounts, dict) else new_accounts
-
-            state.log_command("SYS", "Accounts updated successfully. Restart recommended.", "success")
-            return jsonify({"status": "success"})
-        except Exception as e:
-            return jsonify({"status": "error", "message": str(e)}), 500
-    else:
-        try:
-            accounts_path = os.path.join(state.CONFIG_DIR, 'accounts.json')
-            with open(accounts_path, 'r') as f:
-                return jsonify(json.load(f))
-        except Exception:
-            return jsonify([])
+        payload = request.get_json()
+        incoming = payload.get('accounts') if isinstance(payload, dict) else payload
+        accounts = prepare_accounts(incoming, existing, proxy_manager.load_proxies())
+        proxy_manager.save_accounts(accounts)
+        proxy_manager.sync_proxy_assignments()
+        return jsonify(status='success', message='Đã lưu. Bot của bạn đang kết nối lại.')
+    return jsonify(accounts=public_accounts(existing, getattr(state, 'runtime_status', {}), state.bot_instances))
 
 
 @app.route('/api/proxies', methods=['GET', 'POST'])
@@ -749,6 +649,7 @@ def get_captcha_challenge():
     account_id = request.args.get('account_id', type=str)
     if account_id and account_id in _pending_captchas:
         challenge = _pending_captchas[account_id]
+        get_bot(account_id)
         return jsonify({'success': True, 'challenge': challenge})
     
     if _pending_captchas:

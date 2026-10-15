@@ -383,7 +383,7 @@ class YuleeBot(commands.Bot):
         yulee_logger.log(self, log_type, message)
 
     async def _load_cogs(self):
-        cogs_dir = os.path.join(self.base_dir, 'cogs')
+        cogs_dir = os.path.join(state.CODE_DIR, 'cogs')
         for filename in os.listdir(cogs_dir):
             if filename.endswith('.py'):
                 try:

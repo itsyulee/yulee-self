@@ -32,6 +32,7 @@ except ImportError:
     aiohttp = None
 
 import core.state as state
+from core.storage import write_json
 
 PROXIES_FILE = os.path.join(state.CONFIG_DIR, "proxies.json")
 ACCOUNTS_FILE = os.path.join(state.CONFIG_DIR, "accounts.json")
@@ -64,8 +65,7 @@ def load_proxies():
 
 def save_proxies(proxies):
     _ensure_config_dir()
-    with open(PROXIES_FILE, "w", encoding="utf-8") as f:
-        json.dump({"proxies": proxies}, f, indent=4)
+    write_json(PROXIES_FILE, {"proxies": proxies})
 
 
 def load_accounts():
@@ -80,8 +80,7 @@ def load_accounts():
 
 def save_accounts(accounts):
     _ensure_config_dir()
-    with open(ACCOUNTS_FILE, "w", encoding="utf-8") as f:
-        json.dump({"accounts": accounts}, f, indent=4)
+    write_json(ACCOUNTS_FILE, {"accounts": accounts})
 
 
 def _normalize_type(proxy_type):
@@ -194,7 +193,7 @@ def resolve_account_proxy(account):
 
     proxy = get_proxy_by_id(proxy_id)
     if not proxy:
-        return None, None, "direct"
+        raise ValueError("Assigned proxy is missing or disabled")
 
     label = proxy.get("label") or f"{proxy.get('host')}:{proxy.get('port')}"
     return build_proxy_url(proxy), get_proxy_auth(proxy), label
@@ -274,22 +273,18 @@ async def test_all_proxies():
 
 
 def _sync_assigned_to(proxies, accounts):
-    account_names = {a.get("name"): a for a in accounts}
-    proxy_ids = {p.get("id") for p in proxies}
+    by_id = {p['id']: p for p in proxies}
     for proxy in proxies:
-        assigned = proxy.get("assigned_to")
-        if assigned and assigned not in account_names:
-            proxy["assigned_to"] = None
-    for acc in accounts:
-        pid = acc.get("proxy_id")
-        if pid and pid in proxy_ids:
-            for proxy in proxies:
-                if proxy.get("id") == pid:
-                    proxy["assigned_to"] = acc.get("name")
+        proxy['assigned_to'] = None
+    for account in accounts:
+        proxy = by_id.get(account.get('proxy_id'))
+        if proxy:
+            proxy['assigned_to'] = account.get('name')
     save_proxies(proxies)
 
 
 def auto_assign():
+    sync_proxy_assignments()
     proxies = load_proxies()
     accounts = load_accounts()
 

@@ -65,11 +65,11 @@ function renderProxyTable() {
     body.innerHTML = proxyList.map((p, i) => `
         <tr>
             <td>${i + 1}</td>
-            <td>${p.label || '-'}</td>
+            <td>${escapeHtml(p.label || '-')}</td>
             <td>${p.type || 'socks5'}</td>
-            <td class="mono">${p.host}:${p.port}</td>
+            <td class="mono">${escapeHtml(p.host)}:${p.port}</td>
             <td>${statusBadge(p.status || 'unknown')}</td>
-            <td>${p.assigned_to || '-'}</td>
+            <td>${escapeHtml(p.assigned_to || '-')}</td>
             <td class="proxy-actions">
                 <button class="btn-proxy-sm" onclick="testProxy('${p.id}')">Test</button>
                 <button class="btn-proxy-sm danger" onclick="deleteProxy('${p.id}')">Del</button>
@@ -142,7 +142,7 @@ window.testProxy = async function(id) {
         const data = await res.json();
         if (data.proxies) proxyList = data.proxies;
         renderProxyStats();
-        renderProxyTable();
+        await fetchProxies();
         showToast(data.ok ? 'Proxy OK' : 'Proxy failed', data.ok ? 'success' : 'error');
     } catch (e) {
         showToast('Test failed', 'error');
@@ -254,9 +254,9 @@ function populateAccountProxyDropdown() {
     const sel = document.getElementById('acct-form-proxy');
     if (!sel) return;
     const current = sel.value;
-    sel.innerHTML = '<option value="">None (direct)</option>' +
+    sel.innerHTML = '<option value="">None (direct)</option><option value="__auto__">Auto — chọn proxy trống đã Test OK</option>' +
         proxyList.filter(p => p.enabled !== false).map(p =>
-            `<option value="${p.id}">${p.label || p.host + ':' + p.port} [${p.type || 'socks5'}]</option>`
+            `<option value="${p.id}">${escapeHtml(p.label || p.host + ':' + p.port)} [${p.type || 'socks5'}]</option>`
         ).join('');
     if (current) sel.value = current;
 }

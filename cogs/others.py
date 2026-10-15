@@ -21,6 +21,7 @@ import asyncio
 import time
 import re
 import json
+import os
 import random
 import core.state as state
 from discord.ext import commands
@@ -32,7 +33,7 @@ class Others(commands.Cog):
         self.emoji_dict = {}
         
         try:
-            with open("utils/emojis.json", 'r', encoding="utf-8") as file:
+            with open(os.path.join(state.CODE_DIR, "utils", "emojis.json"), 'r', encoding="utf-8") as file:
                 self.emoji_dict = json.load(file)
         except:
             pass

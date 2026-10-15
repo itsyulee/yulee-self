@@ -598,11 +598,12 @@ function saveAllConfigs() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(currentConfig)
-    }).then(() => {
+    }).then(res => res.json()).then(data => {
+        if (data.status !== 'success') throw new Error(data.message || 'Save failed');
         originalConfig = JSON.parse(JSON.stringify(currentConfig));
         checkDirty();
-        showToast(`Settings Saved for Account: ${currentAccountId}`);
-    });
+        showToast('Đã lưu cấu hình tài khoản của bạn.');
+    }).catch(error => showToast(error.message, 'error'));
 }
 
 function saveToAllConfigs() {

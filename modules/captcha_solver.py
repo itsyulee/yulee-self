@@ -39,7 +39,7 @@ class CaptchaSolver:
     """
     def __init__(self, bot):
         self.bot = bot
-        self.model_path = os.path.join(self.bot.base_dir, "models", "best.onnx")
+        self.model_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models", "best.onnx")
         self.onnx_session = None
         self.classes = "abcdefghijklmnopqrstuvwxyz"
         self.conf_threshold = 0.3

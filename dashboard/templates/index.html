@@ -20,6 +20,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YULEESELF</title>
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <script src="/static/js/session.js?v=multiuser1"></script>
     <link rel="icon" type="image/png" href="/static/assets/yuleelogo.png">
     <link
         href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Exo+2:wght@300;400;600;800&family=Rajdhani:wght@400;600&family=Roboto+Mono:wght@400;500&display=swap"
@@ -104,9 +106,13 @@
                         style="--icon: url('/static/assets/yulee_icons/clock-rotate-left.svg');"></span> History</a>
                 <a class="nav-item" onclick="nav('logs', this)"><span class="icon-svg"
                         style="--icon: url('/static/assets/yulee_icons/terminal.svg');"></span> Terminal</a>
-                <a class="nav-item" onclick="location.href='/logout'" style="color: #ff4444 !important;"><span
+                <a class="nav-item" onclick="logoutSession()" style="color: #ff4444 !important;"><span
                         class="icon-svg" style="--icon: url('/static/assets/yulee_icons/logout.svg');"></span>
                     Logout</a>
+                <a class="nav-item" onclick="nav('profile', this)">Tài khoản đăng nhập</a>
+                {% if login_user.role == 'admin' %}
+                <a class="nav-item" onclick="nav('users', this); loadUsers()">Quản lý người dùng</a>
+                {% endif %}
             </nav>
             <div style="margin-top:auto">
                 <div class="status-indicator">
@@ -127,9 +133,47 @@
         </aside>
 
         <main class="content-area">
+            <section id="profile" class="view">
+                <h3>Tài khoản đăng nhập</h3>
+                <p class="accounts-page-hint">{{ login_user.username }} · {{ login_user.role }} — Discord, proxy và lịch sử của riêng bạn.</p>
+                <form id="password-form" class="proxy-modal-inner" style="margin:20px 0;max-width:480px" onsubmit="changeLoginPassword(event)">
+                    <h3>Đổi mật khẩu</h3>
+                    <label class="form-label" for="current-password">Mật khẩu hiện tại</label>
+                    <input class="cfg-input" id="current-password" type="password" autocomplete="current-password" required>
+                    <label class="form-label" for="new-password">Mật khẩu mới (ít nhất 8 ký tự)</label>
+                    <input class="cfg-input" id="new-password" type="password" autocomplete="new-password" minlength="8" maxlength="256" required>
+                    <label class="form-label" for="confirm-password">Nhập lại mật khẩu mới</label>
+                    <input class="cfg-input" id="confirm-password" type="password" autocomplete="new-password" minlength="8" required>
+                    <button class="btn-control green" type="submit" style="margin-top:16px">Đổi mật khẩu</button>
+                    <p id="password-result" role="status"></p>
+                </form>
+            </section>
+            {% if login_user.role == 'admin' %}
+            <section id="users" class="view">
+                <h3>Quản lý quyền sử dụng</h3>
+                <p class="accounts-page-hint">Bạn cấp tài khoản sau khi bán quyền sử dụng. Khách tự thêm Discord và proxy trong dashboard riêng.</p>
+                <form id="user-form" class="proxy-modal-inner" style="margin:20px 0;max-width:520px" onsubmit="saveLoginUser(event)">
+                    <h3 id="user-form-title">Cấp tài khoản mới</h3>
+                    <input type="hidden" id="login-user-id">
+                    <label class="form-label" for="login-user-name">Tên đăng nhập</label>
+                    <input class="cfg-input" id="login-user-name" autocomplete="off" pattern="[A-Za-z0-9_.\-]{3,64}" required>
+                    <label class="form-label" for="login-user-password">Mật khẩu (để trống khi sửa nếu muốn giữ nguyên)</label>
+                    <input class="cfg-input" id="login-user-password" type="password" autocomplete="new-password" minlength="8" maxlength="256">
+                    <label class="form-label" for="login-user-expiry">Hạn sử dụng (để trống = không giới hạn)</label>
+                    <input class="cfg-input" id="login-user-expiry" type="datetime-local">
+                    <label class="form-label"><input id="login-user-enabled" type="checkbox" checked> Cho phép sử dụng</label>
+                    <div class="proxy-modal-actions">
+                        <button class="btn-control green" type="submit">Lưu tài khoản</button>
+                        <button class="btn-control" type="button" onclick="resetUserForm()">Tạo mới</button>
+                    </div>
+                    <p id="user-result" role="status"></p>
+                </form>
+                <div id="login-user-list" class="account-config-list"></div>
+            </section>
+            {% endif %}
             <!-- Accounts Tab -->
             <div id="accounts" class="active-view view">
-                <p class="accounts-page-hint">Online accounts — select one for Dashboard control. Manage credentials
+                <p class="accounts-page-hint">Your online accounts — select one for Dashboard control. Manage credentials
                     below.</p>
                 <h3 class="section-subtitle">Online</h3>
                 <div id="accounts-grid" class="accounts-picker-grid">
@@ -137,7 +181,7 @@
                 </div>
                 <h3 class="section-subtitle" style="margin-top: 32px;">Manage Accounts</h3>
                 <p class="accounts-page-hint">Add or edit accounts. Proxy is optional — leave as direct if not needed.
-                    Restart bot after changes.</p>
+                    Changes apply automatically to your accounts.</p>
                 <div class="account-manage-toolbar">
                     <button class="btn-control green" onclick="showAccountForm()"><span class="icon-svg"
                             style="--icon: url('/static/assets/yulee_icons/plus.svg');"></span> <span
@@ -169,7 +213,7 @@
 
             <!-- Proxies Tab -->
             <div id="proxies" class="view">
-                <p class="accounts-page-hint">Optional per-account proxies. Bulk paste supported — one proxy per line.
+                <p class="accounts-page-hint">Your private proxy pool. Test proxies, then use Auto-Assign or select a proxy for each Discord account.
                 </p>
                 <div class="proxy-stats-bar">
                     <div class="proxy-stat-card"><span id="proxy-stat-total">0</span><label>Total</label></div>
@@ -529,8 +573,8 @@
 
     <script src="/static/js/core.js"></script>
     <script src="/static/js/navigation.js"></script>
-    <script src="/static/js/accounts.js"></script>
-    <script src="/static/js/proxies.js"></script>
+    <script src="/static/js/accounts.js?v=multiuser1"></script>
+    <script src="/static/js/proxies.js?v=multiuser1"></script>
     <script src="/static/js/security.js"></script>
     <script src="/static/js/config.js"></script>
     <script src="/static/js/dashboard.js"></script>
