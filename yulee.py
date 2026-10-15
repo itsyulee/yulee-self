@@ -9,14 +9,10 @@
 # You should have received a copy of the GNU General Public License
 # along with YuleeSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
 
+"""Start YULEESELF. Gateway is the single source of host/port settings."""
 
-"""
-Author: zOnisdev
-YuleeSelf-UwU - https://github.com/itsyulee/yulee-self
-"""
-
-from pathlib import Path
 import os
+from pathlib import Path
 
 
 def main():

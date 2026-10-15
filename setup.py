@@ -9,15 +9,16 @@
 # You should have received a copy of the GNU General Public License
 # along with YuleeSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
 
+"""Run setup, then launch the web server through yulee.py.
 
-"""
-Author: zOnisdev
-YuleeSelf-UwU - https://github.com/itsyulee/yulee-self
+Kept compatible with the existing Wispbyte startup command:
+/usr/local/bin/python /home/container/setup.py
 """
 
 import argparse
 import os
 from pathlib import Path
+import traceback
 
 
 def main():
@@ -27,14 +28,35 @@ def main():
     parser.add_argument('--setup-only', action='store_true', help='Install dependencies without starting server')
     parser.add_argument('--repair', action='store_true', help='Repair installed dependencies')
     args = parser.parse_args()
-    from yulee_engines.setup_engine import YuleeSetupEngine
-    engine = YuleeSetupEngine()
-    if not engine.run_full_setup(force_bootstrap=args.repair):
-        raise SystemExit(1)
-    if not args.setup_only:
-        from service.gateway import serve
-        serve()
+
+    print('[YULEESELF] Starting setup...', flush=True)
+    try:
+        from yulee_engines.setup_engine import YuleeSetupEngine
+        engine = YuleeSetupEngine()
+        if not engine.run_full_setup(force_bootstrap=args.repair):
+            print('[YULEESELF] Setup FAILED. Check data/setup.log and the errors above.', flush=True)
+            return 1
+    except Exception:
+        print('[YULEESELF] Setup FAILED with an exception:', flush=True)
+        traceback.print_exc()
+        return 1
+
+    if args.setup_only:
+        print('[YULEESELF] Setup completed (--setup-only); server not started.', flush=True)
+        return 0
+
+    print('[YULEESELF] Setup complete; launching web gateway...', flush=True)
+    try:
+        from yulee import main as run_server
+        run_server()
+    except Exception:
+        print('[YULEESELF] Web startup FAILED:', flush=True)
+        traceback.print_exc()
+        print('[YULEESELF] On first run, set YULEESELF_ADMIN_USER and '
+              'YULEESELF_ADMIN_PASSWORD in hosting environment settings.', flush=True)
+        return 1
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    raise SystemExit(main())
