@@ -230,7 +230,7 @@ def serve():
     signal.signal(signal.SIGTERM, terminate)
     threading.Thread(target=manager.monitor, daemon=True).start()
     host = os.environ.get('YULEESELF_HOST', '0.0.0.0')
-    port = int(os.environ.get('SERVER_PORT') or os.environ.get('PORT') or os.environ.get('YULEESELF_PORT') or '8000')
+    port = int(os.environ['PORT'])
     print(f'YULEESELF dashboard: http://localhost:{port} — thêm Discord và proxy trên web.')
     try:
         waitress_serve(app, host=host, port=port, threads=12)
