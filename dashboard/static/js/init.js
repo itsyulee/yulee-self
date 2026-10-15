@@ -48,6 +48,13 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(window.fetchAccounts, 5000);
     setInterval(update, 1000);
     setInterval(window.pollForCaptchas, 2000);
+    // Restore the last visible page when the user refreshes with F5.
+    let lastView = 'accounts';
+    try { lastView = sessionStorage.getItem('yulee:active-view') || 'accounts'; } catch (_) {}
+    if (lastView !== 'accounts') {
+        const savedItem = document.querySelector('.nav-item[data-view="' + lastView + '"]');
+        if (savedItem && document.getElementById(lastView)) nav(lastView, savedItem);
+    }
     updateMobileControls();
     window.addEventListener('resize', updateMobileControls);
 });

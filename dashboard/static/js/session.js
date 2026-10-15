@@ -33,6 +33,12 @@ async function sessionRequest(url, method, body) {
 
 async function logoutSession() {
     await sessionRequest('/logout', 'POST');
+    // Do not restore a previous user's menu after a deliberate logout.
+    try {
+        sessionStorage.removeItem('yulee:active-view');
+        sessionStorage.removeItem('yulee:settings-tab');
+        sessionStorage.removeItem('yulee:selected-account');
+    } catch (_) {}
     location.replace('/login');
 }
 

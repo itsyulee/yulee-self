@@ -24,7 +24,10 @@ window.fetchAccounts = async function() {
         accountsList = data;
         if (data.length > 0) {
             if (!currentAccountId || !data.find(a => a.id === currentAccountId)) {
-                currentAccountId = data[0].id;
+                let savedId = null;
+                try { savedId = sessionStorage.getItem('yulee:selected-account'); } catch (_) {}
+                const savedAccount = data.find(a => String(a.id) === savedId);
+                currentAccountId = savedAccount ? savedAccount.id : data[0].id;
             }
         }
         if (!data.length) currentAccountId = null;
@@ -54,6 +57,7 @@ function updateGlobalAccountName() {
 window.selectAccount = function(id) {
     console.log(`Selecting account: ${id}`);
     currentAccountId = id;
+    try { sessionStorage.setItem('yulee:selected-account', String(id)); } catch (_) {}
     renderAccountGrid();
     const acc = accountsList.find(a => a.id === id);
     if (acc) {

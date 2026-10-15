@@ -15,48 +15,39 @@
 
 */
 window.nav = function(id, el) {
-    console.log(`Navigating to: ${id}`);
+    // Verify the page and the visible menu item before switching.
+    const target = document.getElementById(id);
+    const item = document.querySelector('.nav-item[data-view="' + id + '"]') ||
+        (el && el.classList && el.classList.contains('nav-item') ? el : null);
+    if (!target || !item) return;
+
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    const target = document.getElementById(id);
-    if (!target) {
-        console.error(`Navigation target not found: ${id}`);
-        return;
-    }
     target.classList.add('active-view');
-    if (el) el.classList.add('active');
-    checkDirty();
+    item.classList.add('active');
+    try { sessionStorage.setItem('yulee:active-view', id); } catch (_) {}
 
+    if (typeof checkDirty === 'function') checkDirty();
     const mobileControls = document.getElementById('mobileControls');
-    if (mobileControls) {
-        if (id === 'dash' && window.innerWidth <= 768) {
-            mobileControls.style.display = 'flex';
-        } else {
-            mobileControls.style.display = 'none';
-        }
-    }
-
+    if (mobileControls) mobileControls.style.display = id === 'dash' && window.innerWidth <= 768 ? 'flex' : 'none';
     const mobileTopControls = document.querySelector('.mobile-top-controls');
-    if (mobileTopControls) {
-        mobileTopControls.style.display = (id === 'dash') ? 'flex' : 'none';
-    }
-    if (id === 'dash') {
-        document.body.classList.add('active-dash-header');
-    } else {
-        document.body.classList.remove('active-dash-header');
-    }
+    if (mobileTopControls) mobileTopControls.style.display = id === 'dash' ? 'flex' : 'none';
+    document.body.classList.toggle('active-dash-header', id === 'dash');
     if (window.innerWidth <= 768) {
         const sidebar = document.querySelector('.sidebar');
-        if (sidebar && sidebar.classList.contains('active')) {
-            toggleMobileMenu();
-        }
+        if (sidebar && sidebar.classList.contains('active')) toggleMobileMenu();
     }
     if (id === 'accounts') {
         renderAccountGrid();
         fetchAccountConfig();
         if (typeof fetchProxies === 'function') fetchProxies();
     }
-    if (id === 'proxies' && typeof fetchProxies === 'function') fetchProxies();
+    if (id === 'settings') {
+        let tab = 'profile';
+        try { tab = sessionStorage.getItem('yulee:settings-tab') || 'profile'; } catch (_) {}
+        showSettingsTab(tab);
+    }
+    if (id === 'users' && typeof loadUsers === 'function') loadUsers();
     if (id === 'config') loadConfig();
     if (id === 'history') loadHistory();
     if (id === 'security') {
@@ -65,6 +56,20 @@ window.nav = function(id, el) {
     }
 };
 
+window.showSettingsTab = function(tab) {
+    const allowed = ['profile', 'proxies'];
+    if (!allowed.includes(tab)) tab = 'profile';
+    document.querySelectorAll('#settings .settings-panel').forEach(panel => {
+        panel.classList.toggle('active-settings-panel', panel.id === tab);
+    });
+    document.querySelectorAll('#settings .settings-tab').forEach(button => {
+        const active = button.dataset.settingsTab === tab;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-selected', String(active));
+    });
+    try { sessionStorage.setItem('yulee:settings-tab', tab); } catch (_) {}
+    if (tab === 'proxies' && typeof fetchProxies === 'function') fetchProxies();
+};
 window.toggleMobileMenu = function() {
     const s = document.querySelector('.sidebar'), o = document.querySelector('.sidebar-overlay'), t = document.querySelector('.mobile-menu-toggle');
     if (!s || !o || !t) return;

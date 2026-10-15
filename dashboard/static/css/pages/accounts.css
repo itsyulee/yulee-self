@@ -182,3 +182,61 @@
 .account-config-info .dim { font-size: 0.75rem; color: var(--text-muted); }
 .account-config-actions { display: flex; gap: 8px; }
 .account-picker-card.selected{box-shadow:0 0 0 1px rgba(169,237,255,.24),0 10px 30px rgba(4,22,40,.28)}
+
+/* YULEE UI SETTINGS TABS - OCT 2026 */
+.settings-tabbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+    margin-bottom: 22px;
+}
+.settings-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 10px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #142e43;
+    font: 600 0.95rem var(--font-body);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.18s, border-color 0.18s, color 0.18s;
+}
+.settings-tab .icon-svg { width: 19px; height: 19px; }
+.settings-tab:hover, .settings-tab.active {
+    color: var(--primary);
+    background: rgba(130, 221, 247, 0.10);
+    border-color: rgba(130, 221, 247, 0.4);
+}
+.settings-panel { display: none; }
+.settings-panel.active-settings-panel { display: block; }
+
+/* Only normalize the account-administration fields: not every site input. */
+#user-form input.cfg-input {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    height: 44px;
+    padding: 9px 12px;
+    box-sizing: border-box;
+    background: #10293d;
+    color: #f0fbff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font: 0.9rem var(--font-mono);
+    color-scheme: dark;
+}
+#user-form input.cfg-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(130, 221, 247, 0.14);
+    animation: none;
+}
+#user-form input.cfg-input:disabled { opacity: .65; cursor: not-allowed; }
+#user-form #login-user-enabled { accent-color: var(--primary); }
+@media (max-width: 480px) {
+    .settings-tab { flex: 1 1 auto; justify-content: center; padding: 9px 10px; }
+}
