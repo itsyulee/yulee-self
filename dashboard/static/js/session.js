@@ -78,7 +78,7 @@ async function loadUsers() {
                 <strong>${escapeHtml(user.username)}</strong>
                 <span>${escapeHtml(user.role)} · ${status}</span>
                 <span>Hạn dùng: ${escapeHtml(deadline)}</span></div>
-                ${user.role === 'user' ? `<button class="btn-proxy-sm" onclick="editLoginUser(${index})">Sửa / khóa / đặt lại mật khẩu</button>` : ''}
+                ${user.role === 'user' ? `<button class="btn-proxy-sm" onclick="editLoginUser(${index})">Chỉnh sửa</button>` : ''}
             </div>`;
         }).join('');
     } catch (error) {
