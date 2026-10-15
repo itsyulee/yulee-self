@@ -29,7 +29,7 @@ def configure_host():
             raise ValueError(f'{key} must be between 1 and 65535 (got {value!r})')
         break
     else:
-        port = 9235
+        port = 8000
 
     os.environ['YULEESELF_HOST'] = '0.0.0.0'
     os.environ['PORT'] = str(port)
