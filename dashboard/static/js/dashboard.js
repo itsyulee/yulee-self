@@ -39,12 +39,17 @@ let controlRevision = 0;
 function syncControlButtons() {
     const status = controlStatuses.get(currentAccountId);
     const busy = pendingControls.has(currentAccountId);
-    document.querySelectorAll('[data-bot-action]').forEach(button => {
-        const action = button.dataset.botAction;
+    document.querySelectorAll('[data-bot-action], button[onclick*="action("]').forEach(button => {
+        const legacyAction = (button.getAttribute('onclick') || '').match(/action\(['"](start|resume|stop|pause)['"]/);
+        const rawAction = button.dataset.botAction || (legacyAction && legacyAction[1]);
+        const action = ({resume: 'start', pause: 'stop'})[rawAction] || rawAction;
+        if (action !== 'start' && action !== 'stop') return;
+        button.dataset.botAction = action;
         button.disabled = !currentAccountId || busy || !status || status === 'OFFLINE' ||
             (action === 'start' && status === 'ONLINE') ||
             (action === 'stop' && status === 'PAUSED');
         button.setAttribute('aria-busy', String(busy));
+        button.setAttribute('aria-disabled', String(button.disabled));
     });
 }
 
@@ -55,7 +60,13 @@ function update(forceLogs = false) {
     return fetch(`/api/stats${q}`, {cache: 'no-store'}).then(r => { if (!r.ok) throw new Error('Failed to load stats'); return r.json(); }).then(d => {
         if (requestedAccountId !== currentAccountId || requestedRevision !== controlRevision) return;
         if (!pendingControls.has(requestedAccountId)) {
-            if (d && d.status) controlStatuses.set(requestedAccountId, d.status);
+            if (d && d.status) {
+                const status = String(d.status).toUpperCase();
+                const normalized = status === 'OFFLINE' ? 'OFFLINE' :
+                    typeof d.bot?.paused === 'boolean' ? (d.bot.paused ? 'PAUSED' : 'ONLINE') :
+                    ({RUNNING: 'ONLINE', STOPPED: 'PAUSED'})[status] || status;
+                controlStatuses.set(requestedAccountId, normalized);
+            }
             else controlStatuses.delete(requestedAccountId);
             syncControlButtons();
         }
@@ -245,6 +256,7 @@ window.action = async function(a, el) {
     const accountId = currentAccountId;
     if (!accountId || pendingControls.has(accountId) || el?.disabled) return;
     const status = controlStatuses.get(accountId);
+    if ((a === 'start' || a === 'stop') && (!status || status === 'OFFLINE')) return;
     if ((a === 'start' && status === 'ONLINE') || (a === 'stop' && status === 'PAUSED')) return;
     pendingControls.add(accountId);
     controlRevision++;
@@ -273,3 +285,5 @@ window.action = async function(a, el) {
         catch (_) { showToast('Failed to refresh status', 'error'); }
     }
 };
+
+document.addEventListener('DOMContentLoaded', syncControlButtons);
