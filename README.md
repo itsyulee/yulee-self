@@ -72,13 +72,13 @@ Instead of sending just gambling commands, it has strategies (martingale ,flat) 
 ### Windows
 
 ```bash
-curl -o "%TEMP%\install_neuraself.bat" https://raw.githubusercontent.com/itsyulee/yulee-self/main/install_neuraself.bat && "%TEMP%\install_neuraself.bat"
+curl -o "%TEMP%\install_yuleeself.bat" https://raw.githubusercontent.com/itsyulee/yulee-self/main/install_yuleeself.bat && "%TEMP%\install_yuleeself.bat"
 ```
 
 ### Termux / Linux / MacOS
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/itsyulee/yulee-self/main/install_neuraself.sh)
+bash <(curl -s https://raw.githubusercontent.com/itsyulee/yulee-self/main/install_yuleeself.sh)
 ```
 
 #### For Termux
@@ -112,8 +112,10 @@ This tool is for **educational purposes only**. Using self-bots violates Discord
 
 ## Credits
 
-YULEESELF is customized by zOnisdev, based on [NeuraSelf by Routo](https://github.com/routo-loop/neura-self). Original copyright notices and GNU GPL license terms are retained.
+YULEESELF is customized by zOnisdev, based on the original project by Routo. Original copyright notices and GNU GPL license terms are retained.
 
 ## Update checks
 
 Upstream version checks are disabled for this fork. To use a YULEESELF version feed, set `YULEESELF_VERSION_URL` to a JSON endpoint containing `version` and `changelog`.
+
+Original upstream source (attribution only): https://github.com/routo-loop/neura-self

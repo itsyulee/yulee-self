@@ -1,18 +1,18 @@
-# This file is part of NeuraSelf-UwU.
+# This file is part of YuleeSelf-UwU.
 # Copyright (c) 2025-Present Routo
 #
-# NeuraSelf-UwU is free software: you can redistribute it and/or modify
+# YuleeSelf-UwU is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
 # You should have received a copy of the GNU General Public License
-# along with NeuraSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
+# along with YuleeSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
 
 
 """
 Author: Routo
-NeuraSelf-UwU - https://github.com/routo-loop/neura-self
+YuleeSelf-UwU - https://github.com/itsyulee/yulee-self
 """
 
 
@@ -54,7 +54,7 @@ class Shop(commands.Cog):
             if not self._pending_cash_check:
                 self.bot.log("Shop", "Balance unknown. Syncing via 'owo cash'...")
                 self._pending_cash_check = True
-                await self.bot.neura_enqueue("owo cash", priority=3)
+                await self.bot.yulee_enqueue("owo cash", priority=3)
             return
 
         self._pending_cash_check = False
@@ -62,7 +62,7 @@ class Shop(commands.Cog):
         price = self.cash_required.get(item_id, 0)
         
         if current_balance >= price:
-            await self.bot.neura_enqueue(f"owo buy {item_id}", priority=3)
+            await self.bot.yulee_enqueue(f"owo buy {item_id}", priority=3)
             self.bot.log("Shop", f"Buying item #{item_id} (price: {price}, balance: {current_balance})")
         else:
             self.bot.log("Shop", f"Not enough cowoncy to buy item #{item_id} (need {price}, have {current_balance})")
@@ -111,13 +111,13 @@ class Shop(commands.Cog):
         if not cnf.get('enabled', False):
             return
         self.bot.log("Shop", "Auto-syncing balance via 'owo cash'...")
-        await self.bot.neura_enqueue("owo cash", priority=3)
+        await self.bot.yulee_enqueue("owo cash", priority=3)
 
     async def register_actions(self):
         cnf = self.bot.config.get('commands', {}).get('shop', {})
         if cnf.get('enabled', False):
             cooldown = cnf.get('cooldown', 3600)
-            await self.bot.neura_register_command(
+            await self.bot.yulee_register_command(
                 "shop_buy", 
                 self._send_buy_command, 
                 priority=self.bot.get_cmd_priority("shop_buy", 3), 
@@ -125,7 +125,7 @@ class Shop(commands.Cog):
                 initial_offset=random.randint(60, 120)
             )
 
-            await self.bot.neura_register_command(
+            await self.bot.yulee_register_command(
                 "shop_cash_sync",
                 self._sync_balance,
                 priority=self.bot.get_cmd_priority("shop_cash_sync", 3),

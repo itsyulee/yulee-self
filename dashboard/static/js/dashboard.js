@@ -1,15 +1,15 @@
 /* 
 
-# This file is part of NeuraSelf-UwU.
+# This file is part of YuleeSelf-UwU.
 # Copyright (c) 2025-Present Routo
 #
-# NeuraSelf-UwU is free software: you can redistribute it and/or modify
+# YuleeSelf-UwU is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
 # You should have received a copy of the GNU General Public License
-# along with NeuraSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
+# along with YuleeSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
 
 
 
@@ -108,7 +108,7 @@ function renderScheduler(states) {
             let statusHtml = '';
             let progress = 0;
             if (item.in_queue) {
-                statusHtml = `<span style="color:var(--success); font-size:0.8rem; font-weight:bold;"><span class="icon-svg" style="--icon: url('/static/assets/neura_icons/sync.svg'); animation: spin 2s linear infinite;"></span> QUEUED</span>`;
+                statusHtml = `<span style="color:var(--success); font-size:0.8rem; font-weight:bold;"><span class="icon-svg" style="--icon: url('/static/assets/yulee_icons/sync.svg'); animation: spin 2s linear infinite;"></span> QUEUED</span>`;
                 progress = 100;
             } else {
                 const displayTime = Math.ceil(item.remaining);
@@ -143,7 +143,7 @@ function renderQuests(quests, timer) {
     const timerEl = document.getElementById('nextQuestTimer');
     if (!list || !timerEl) return;
     if (timer) {
-        timerEl.innerHTML = `<span class="icon-svg" style="--icon: url('/static/assets/neura_icons/clock.svg'); width: 14px; height: 14px;"></span> Next quest in: ${timer}`;
+        timerEl.innerHTML = `<span class="icon-svg" style="--icon: url('/static/assets/yulee_icons/clock.svg'); width: 14px; height: 14px;"></span> Next quest in: ${timer}`;
         timerEl.style.display = 'block';
     } else {
         timerEl.style.display = 'none';

@@ -1,19 +1,19 @@
-# This file is part of NeuraSelf-UwU.
+# This file is part of YuleeSelf-UwU.
 # Copyright (c) 2025-Present Routo
 #
-# NeuraSelf-UwU is free software: you can redistribute it and/or modify
+# YuleeSelf-UwU is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
 # You should have received a copy of the GNU General Public License
-# along with NeuraSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
+# along with YuleeSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
 
 
 
 """
 Author: Routo
-NeuraSelf-UwU - https://github.com/routo-loop/neura-self
+YuleeSelf-UwU - https://github.com/itsyulee/yulee-self
 """
 
 
@@ -28,10 +28,10 @@ import asyncio
 import re
 import sys
 import requests
-from modules.neura_human import NeuraHuman
-from modules.neura_logs import neura_logger
+from modules.yulee_human import YuleeHuman
+from modules.yulee_logs import yulee_logger
 from modules.identity import IdentityManager
-from component_v2_neura import setup_interactions
+from component_v2_yulee import setup_interactions
 from modules.captcha_solver import setup_solver
 from modules.web_solver import setup_web_solver
 import core.state as state
@@ -44,7 +44,7 @@ from rich.align import Align
 
 _log = logging.getLogger(__name__)
 
-class NeuraBot(commands.Bot):
+class YuleeBot(commands.Bot):
     def __init__(self, token=None, channels=None, proxy_url=None, proxy_auth=None, proxy_label="direct"):
         self.session = None
         self.base_dir = state.BASE_DIR
@@ -102,8 +102,8 @@ class NeuraBot(commands.Bot):
         self.is_ready = False
         self.cmd_cooldowns = {}
         self.cmd_states = {}
-        self.neura_queue = asyncio.PriorityQueue()
-        self.neura_scheduler_task = None
+        self.yulee_queue = asyncio.PriorityQueue()
+        self.yulee_scheduler_task = None
         self.is_busy = False
         self.grind_active_time = 0.0
         self.last_break_check = 0.0
@@ -137,9 +137,9 @@ class NeuraBot(commands.Bot):
             self.log("ERROR", f"Failed to start history session: {e}")
 
         asyncio.create_task(self._process_pending_commands())
-        asyncio.create_task(self.neura_queue_worker())
+        asyncio.create_task(self.yulee_queue_worker())
         asyncio.create_task(self._track_active_time())
-        self.neura_scheduler_task = asyncio.create_task(self.neura_scheduler_worker())
+        self.yulee_scheduler_task = asyncio.create_task(self.yulee_scheduler_worker())
         await self._load_cogs()
     
     async def _track_active_time(self):
@@ -300,7 +300,7 @@ class NeuraBot(commands.Bot):
             
             try:
                 if typing_enabled and not skip_typing:
-                    sent_ok = await NeuraHuman.neura_send(self, channel, content)
+                    sent_ok = await YuleeHuman.yulee_send(self, channel, content)
                     if not sent_ok:
                         return False
                 else:
@@ -380,7 +380,7 @@ class NeuraBot(commands.Bot):
         return state.account_stats[uid]
 
     def log(self, log_type, message):
-        neura_logger.log(self, log_type, message)
+        yulee_logger.log(self, log_type, message)
 
     async def _load_cogs(self):
         cogs_dir = os.path.join(self.base_dir, 'cogs')
@@ -418,7 +418,7 @@ class NeuraBot(commands.Bot):
         cmd_to_cog = {
             "owo": "Grinding", "hunt": "Grinding", "battle": "Grinding",
             "coinflip": "Gambling", "slots": "Gambling",
-            "curse": "NeuraCursePray", "pray": "NeuraCursePray",
+            "curse": "YuleeCursePray", "pray": "YuleeCursePray",
             "shop": "Shop", "huntbot": "HuntBot", "daily": "Daily",
             "quest": "Quest", "rpp": "RPP", "cookie": "Cookie",
             "level_grind": "LevelQuotes",
@@ -724,17 +724,17 @@ class NeuraBot(commands.Bot):
     def is_message_for_me(self, message, role="any", keyword=None):
         return self.identity.is_message_for_me(message, role, keyword)
 
-    async def neura_enqueue(self, content, priority=3, skip_typing=None, _cmd_id=None, target_channel_id=None):
+    async def yulee_enqueue(self, content, priority=3, skip_typing=None, _cmd_id=None, target_channel_id=None):
         options = {"skip_typing": skip_typing, "_cmd_id": _cmd_id, "target_channel_id": target_channel_id}
         item = (priority, time.time(), content, options)
-        await self.neura_queue.put(item)
+        await self.yulee_queue.put(item)
 
-    async def neura_queue_worker(self):
+    async def yulee_queue_worker(self):
         await self.wait_until_ready()
         self.log("SYS", "YULEESELF Queue Worker started.")
         while self.active:
             try:
-                priority, ts, content, options = await self.neura_queue.get()
+                priority, ts, content, options = await self.yulee_queue.get()
                 cmd_id = options.get("_cmd_id")
                 target_channel_id = options.get("target_channel_id")
 
@@ -814,13 +814,13 @@ class NeuraBot(commands.Bot):
                 finally:
                     if cmd_id and cmd_id in self.cmd_states:
                         self.cmd_states[cmd_id]['in_queue'] = False
-                    self.neura_queue.task_done()
+                    self.yulee_queue.task_done()
 
             except Exception as e:
                 self.log("ERROR", f"Queue worker error: {e}")
                 await asyncio.sleep(1)
 
-    async def neura_register_command(self, cmd_id, content, priority, delay, initial_offset=0):
+    async def yulee_register_command(self, cmd_id, content, priority, delay, initial_offset=0):
         existing = self.cmd_states.get(cmd_id, {})
         now = time.time()
 
@@ -844,7 +844,7 @@ class NeuraBot(commands.Bot):
             "in_queue": in_queue
         }
 
-    async def neura_scheduler_worker(self):
+    async def yulee_scheduler_worker(self):
         await self.wait_until_ready()
         self.log("SYS", "YULEESELF Scheduler started.")
         while self.active:
@@ -867,7 +867,7 @@ class NeuraBot(commands.Bot):
                                 actual_content = actual_content()
                         
                         if actual_content is not None:
-                            asyncio.create_task(self.neura_enqueue(actual_content, priority=state["priority"], _cmd_id=cmd_id))
+                            asyncio.create_task(self.yulee_enqueue(actual_content, priority=state["priority"], _cmd_id=cmd_id))
                         else:
                             state["in_queue"] = False
                             state["last_ran"] = time.time()

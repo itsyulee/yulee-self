@@ -1,18 +1,18 @@
-# This file is part of NeuraSelf-UwU.
+# This file is part of YuleeSelf-UwU.
 # Copyright (c) 2025-Present Routo
 #
-# NeuraSelf-UwU is free software: you can redistribute it and/or modify
+# YuleeSelf-UwU is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
 # You should have received a copy of the GNU General Public License
-# along with NeuraSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
+# along with YuleeSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
 
 
 """
 Author: Routo
-NeuraSelf-UwU - https://github.com/routo-loop/neura-self
+YuleeSelf-UwU - https://github.com/itsyulee/yulee-self
 """
 
 
@@ -23,22 +23,22 @@ import random
 import json
 import core.state as state
 from discord.ext import commands
-from neura_engines.quest_engine import NeuraQuestEngine
-from component_v2_neura import parse_v2_message
+from yulee_engines.quest_engine import YuleeQuestEngine
+from component_v2_yulee import parse_v2_message
 
 class Quest(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.active = True
         self.task = None
-        self.engine = NeuraQuestEngine(self.bot)
+        self.engine = YuleeQuestEngine(self.bot)
 
     async def register_actions(self):
         cfg = self.bot.config.get('commands', {}).get('quest', {})
         if cfg.get('enabled', True):
             self.bot.log("SYS", "Quest Module configured.")
             ih = cfg.get('interval_h', 6)
-            await self.bot.neura_register_command("quest", "quest", priority=self.bot.get_cmd_priority("quest", 4), delay=ih * 3600, initial_offset=10)
+            await self.bot.yulee_register_command("quest", "quest", priority=self.bot.get_cmd_priority("quest", 4), delay=ih * 3600, initial_offset=10)
             self.trigger_action()
             
             self.engine.start()

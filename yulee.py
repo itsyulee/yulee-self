@@ -12,7 +12,7 @@
 
 """
 Author: zOnisdev
-YuleeSelf-UwU - https://github.com/routo-loop/neura-self
+YuleeSelf-UwU - https://github.com/itsyulee/yulee-self
 """
 
 import sys
@@ -34,14 +34,14 @@ from rich.align import Align
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from neura_engines.setup_engine import NeuraSetupEngine
-from core.bot import NeuraBot
+from yulee_engines.setup_engine import YuleeSetupEngine
+from core.bot import YuleeBot
 from dashboard.app import app as flask_app
 import core.state as state
 from utils import proxy_manager
 
 console = Console()
-engine = NeuraSetupEngine()
+engine = YuleeSetupEngine()
 
 if not engine.environment_healthy():
     console.print("[yellow]Environment not healthy – running setup...[/yellow]")
@@ -52,8 +52,8 @@ if not engine.environment_healthy():
     os.execv(sys.executable, [sys.executable] + sys.argv)
 
 def show_banner():
-    from neuraself_ascii import neura_ascii
-    neura_ascii.show_banner('main')
+    from yuleeself_ascii import yulee_ascii
+    yulee_ascii.show_banner('main')
 
 def detect_platform():
     if "TERMUX_VERSION" in os.environ or "com.termux" in os.environ.get("PREFIX", ""):
@@ -127,7 +127,7 @@ async def main():
                         valid_channels.append(ch)
             try:
                 proxy_url, proxy_auth, proxy_label = proxy_manager.resolve_account_proxy(acc)
-                bot = NeuraBot(
+                bot = YuleeBot(
                     token=token,
                     channels=valid_channels,
                     proxy_url=proxy_url,

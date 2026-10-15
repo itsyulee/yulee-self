@@ -1,18 +1,18 @@
-# This file is part of NeuraSelf-UwU.
+# This file is part of YuleeSelf-UwU.
 # Copyright (c) 2025-Present Routo
 #
-# NeuraSelf-UwU is free software: you can redistribute it and/or modify
+# YuleeSelf-UwU is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
 # You should have received a copy of the GNU General Public License
-# along with NeuraSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
+# along with YuleeSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
 
 
 """
 Author: Routo
-NeuraSelf-UwU - https://github.com/routo-loop/neura-self
+YuleeSelf-UwU - https://github.com/itsyulee/yulee-self
 """
 
 import json
@@ -22,7 +22,7 @@ import sqlite3
 from datetime import datetime
 import calendar
 
-HISTORY_FILE = 'data/neura_history.db'
+HISTORY_FILE = 'data/yulee_history.db'
 LEGACY_HISTORY_FILE = 'data/history.json'
 
 def get_db():

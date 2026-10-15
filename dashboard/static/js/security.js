@@ -1,14 +1,14 @@
 /* 
-# This file is part of NeuraSelf-UwU.
+# This file is part of YuleeSelf-UwU.
 # Copyright (c) 2025-Present Routo
 #
-# NeuraSelf-UwU is free software: you can redistribute it and/or modify
+# YuleeSelf-UwU is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
 # You should have received a copy of the GNU General Public License
-# along with NeuraSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
+# along with YuleeSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
 */
 
 const CAPTCHA_SERVICES = {
@@ -65,7 +65,7 @@ async function fetchSecuritySummary() {
                 <div class="sec-account-card ${d.status === "PAUSED" ? 'alert-active' : ''} ${isActive ? 'selected' : ''}">
                     <div class="sec-acc-header">
                         <div class="sec-acc-info">
-                            ${acc.avatar ? `<img src="${acc.avatar}" class="account-avatar-lg" alt="">` : '<span class="icon-svg account-avatar-lg account-avatar-fallback" style="--icon: url(\'/static/assets/neura_icons/discord.svg\');"></span>'}
+                            ${acc.avatar ? `<img src="${acc.avatar}" class="account-avatar-lg" alt="">` : '<span class="icon-svg account-avatar-lg account-avatar-fallback" style="--icon: url(\'/static/assets/yulee_icons/discord.svg\');"></span>'}
                             <div class="sec-acc-text">
                                 <div class="sec-acc-name">${acc.username}</div>
                                 <div class="sec-acc-id">User ID · ${acc.id}</div>
@@ -75,17 +75,17 @@ async function fetchSecuritySummary() {
                     </div>
                     <div class="sec-acc-stats">
                         <div class="sec-mini-stat">
-                            <span class="icon-svg" style="--icon: url('/static/assets/neura_icons/check-to-slot.svg'); background-color: var(--success);"></span>
+                            <span class="icon-svg" style="--icon: url('/static/assets/yulee_icons/check-to-slot.svg'); background-color: var(--success);"></span>
                             <div class="val">${d.security.captchas}</div>
                             <div class="lbl">Solved</div>
                         </div>
                         <div class="sec-mini-stat">
-                            <span class="icon-svg" style="--icon: url('/static/assets/neura_icons/user-slash.svg'); background-color: var(--danger);"></span>
+                            <span class="icon-svg" style="--icon: url('/static/assets/yulee_icons/user-slash.svg'); background-color: var(--danger);"></span>
                             <div class="val">${d.security.bans}</div>
                             <div class="lbl">Bans</div>
                         </div>
                         <div class="sec-mini-stat">
-                            <span class="icon-svg" style="--icon: url('/static/assets/neura_icons/warning.svg'); background-color: var(--warning);"></span>
+                            <span class="icon-svg" style="--icon: url('/static/assets/yulee_icons/warning.svg'); background-color: var(--warning);"></span>
                             <div class="val">${d.security.warnings}</div>
                             <div class="lbl">Warns</div>
                         </div>
@@ -109,7 +109,7 @@ function renderCaptchaSolverWidget(cfg, basePath, parentEnabled) {
     return `
         <div class="cfg-row" data-path="${basePath}.enabled">
             <div class="cfg-row-label"><span class="cfg-label-text">Enable Auto-Solver</span></div>
-            <div class="cfg-row-control">${renderNeuraToggle(basePath + '.enabled', enabled, parentEnabled, true)}</div>
+            <div class="cfg-row-control">${renderYuleeToggle(basePath + '.enabled', enabled, parentEnabled, true)}</div>
         </div>
         <div class="cfg-row csw-service-row" data-path="${basePath}.service">
             <div class="cfg-row-label">
@@ -147,7 +147,7 @@ function renderCaptchaSolverWidget(cfg, basePath, parentEnabled) {
                         <span id="csw-balance-text">Click to check…</span>
                     </span>
                     <button class="cfg-stepper-btn csw-refresh-btn" onclick="fetchCaptchaBalance()" title="Refresh balance">
-                        <span class="icon-svg" style="--icon: url('/static/assets/neura_icons/sync.svg');"></span>
+                        <span class="icon-svg" style="--icon: url('/static/assets/yulee_icons/sync.svg');"></span>
                     </button>
                 </div>
             </div>

@@ -1,18 +1,18 @@
-# This file is part of NeuraSelf-UwU.
+# This file is part of YuleeSelf-UwU.
 # Copyright (c) 2025-Present Routo
 #
-# NeuraSelf-UwU is free software: you can redistribute it and/or modify
+# YuleeSelf-UwU is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
 # You should have received a copy of the GNU General Public License
-# along with NeuraSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
+# along with YuleeSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
 
 
 """
 Author: Routo
-NeuraSelf-UwU - https://github.com/routo-loop/neura-self
+YuleeSelf-UwU - https://github.com/itsyulee/yulee-self
 """
 
 
@@ -65,7 +65,7 @@ class ChannelSwitch(commands.Cog):
             else:
                 interval = float(interval_config)
 
-            await self.bot.neura_register_command("channelswitch", "", priority=self.bot.get_cmd_priority("channelswitch", 5), delay=interval, initial_offset=10)
+            await self.bot.yulee_register_command("channelswitch", "", priority=self.bot.get_cmd_priority("channelswitch", 5), delay=interval, initial_offset=10)
 
 async def setup(bot):
     cog = ChannelSwitch(bot)

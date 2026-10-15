@@ -1,18 +1,18 @@
-# This file is part of NeuraSelf-UwU.
+# This file is part of YuleeSelf-UwU.
 # Copyright (c) 2025-Present Routo
 #
-# NeuraSelf-UwU is free software: you can redistribute it and/or modify
+# YuleeSelf-UwU is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
 # You should have received a copy of the GNU General Public License
-# along with NeuraSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
+# along with YuleeSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
 
 
 """
 Author: Routo
-NeuraSelf-UwU - https://github.com/routo-loop/neura-self
+YuleeSelf-UwU - https://github.com/itsyulee/yulee-self
 """
 
 
@@ -64,7 +64,7 @@ class Grinding(commands.Cog):
             rb_cfg = self.bot.config.get('reactionBot', {})
             if rb_cfg.get('enabled', False) and rb_cfg.get('hunt_and_battle', False):
                 delay += 5
-            await self.bot.neura_register_command("hunt", "hunt", priority=self.bot.get_cmd_priority("hunt", 3), delay=delay, initial_offset=5)
+            await self.bot.yulee_register_command("hunt", "hunt", priority=self.bot.get_cmd_priority("hunt", 3), delay=delay, initial_offset=5)
 
         cfg_battle = self.bot.config.get('commands', {}).get('battle', {})
         if not cfg_battle.get('enabled', False):
@@ -74,7 +74,7 @@ class Grinding(commands.Cog):
             rb_cfg = self.bot.config.get('reactionBot', {})
             if rb_cfg.get('enabled', False) and rb_cfg.get('hunt_and_battle', False):
                 delay += 5
-            await self.bot.neura_register_command("battle", "battle", priority=self.bot.get_cmd_priority("battle", 3), delay=delay, initial_offset=10)
+            await self.bot.yulee_register_command("battle", "battle", priority=self.bot.get_cmd_priority("battle", 3), delay=delay, initial_offset=10)
 
         cfg_owo = self.bot.config.get('commands', {}).get('owo', {})
         if not cfg_owo.get('enabled', False):
@@ -84,7 +84,7 @@ class Grinding(commands.Cog):
             rb_cfg = self.bot.config.get('reactionBot', {})
             if rb_cfg.get('enabled', False) and rb_cfg.get('owo', False):
                 delay += 5
-            await self.bot.neura_register_command("owo", "owo", priority=self.bot.get_cmd_priority("owo", 1), delay=delay, initial_offset=15)
+            await self.bot.yulee_register_command("owo", "owo", priority=self.bot.get_cmd_priority("owo", 1), delay=delay, initial_offset=15)
 
 async def setup(bot):
     cog = Grinding(bot)

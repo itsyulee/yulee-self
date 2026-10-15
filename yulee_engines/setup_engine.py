@@ -1,18 +1,18 @@
-# This file is part of NeuraSelf-UwU.
+# This file is part of YuleeSelf-UwU.
 # Copyright (c) 2025-Present Routo
 #
-# NeuraSelf-UwU is free software: you can redistribute it and/or modify
+# YuleeSelf-UwU is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
 # You should have received a copy of the GNU General Public License
-# along with NeuraSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
+# along with YuleeSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
 
 
 """
 Author: Routo
-NeuraSelf-UwU - https://github.com/routo-loop/neura-self
+YuleeSelf-UwU - https://github.com/itsyulee/yulee-self
 """
 
 
@@ -49,10 +49,10 @@ except ImportError:
 
 console = Console()
 SETUP_LOG = os.path.join(state.DATA_DIR, "setup.log")
-DEFAULT_PASSWORD = "neuraself_default_password_change_me"
+DEFAULT_PASSWORD = "yuleeself_default_password_change_me"
 REQUIRED_VERSION_SUFFIX = "+g20ae80b3"
 
-class NeuraSetupEngine:
+class YuleeSetupEngine:
     def __init__(self):
         self._log_lines = []
         self._ready = False

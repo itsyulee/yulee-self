@@ -12,7 +12,7 @@
 
 """
 Author: zOnisdev
-YuleeSelf-UwU - https://github.com/routo-loop/neura-self
+YuleeSelf-UwU - https://github.com/itsyulee/yulee-self
 """
 
 import asyncio
@@ -32,12 +32,12 @@ if sys.stdout.encoding != 'utf-8':
         pass
 
 import core.state as state
-from neura_engines.setup_engine import NeuraSetupEngine, console, Confirm, Prompt, Table, Panel
+from yulee_engines.setup_engine import YuleeSetupEngine, console, Confirm, Prompt, Table, Panel
 from utils import proxy_manager
 
-engine = NeuraSetupEngine()
+engine = YuleeSetupEngine()
 
-from neuraself_ascii.neura_ascii import show_banner
+from yuleeself_ascii.yulee_ascii import show_banner
 
 def clean_screen():
     os.system("cls" if os.name == "nt" else "clear")
@@ -336,7 +336,7 @@ async def setup_menu():
             try:
                 with open(auth_path, "r", encoding="utf-8") as f:
                     auth = json.load(f)
-                if auth.get("password") == "neuraself_default_password_change_me":
+                if auth.get("password") == "yuleeself_default_password_change_me":
                     if Confirm.ask("change default dashboard password?", default=False):
                         new_pass = Prompt.ask("new password", password=True)
                         if new_pass:
@@ -352,8 +352,8 @@ async def setup_menu():
                     await proxy_manager_cli(bulk_only=True)
             console.print("\n[green]launching YULEESELF...[/green]")
             time.sleep(1)
-            import neura
-            await neura.main()
+            import yulee
+            await yulee.main()
             break
         elif choice == "2":
             await account_manager()
@@ -391,8 +391,8 @@ async def quick_start():
     if not proxies:
         console.print("[yellow]No proxies found. You can run without proxies (direct connection).[/yellow]")
     console.print("[green]Launching YULEESELF...[/green]")
-    import neura
-    await neura.main()
+    import yulee
+    await yulee.main()
 
 def main():
     parser = argparse.ArgumentParser(description="YULEESELF Setup")

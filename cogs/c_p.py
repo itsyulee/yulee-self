@@ -1,18 +1,18 @@
-# This file is part of NeuraSelf-UwU.
+# This file is part of YuleeSelf-UwU.
 # Copyright (c) 2025-Present Routo
 #
-# NeuraSelf-UwU is free software: you can redistribute it and/or modify
+# YuleeSelf-UwU is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
 # You should have received a copy of the GNU General Public License
-# along with NeuraSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
+# along with YuleeSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
 
 
 """
 Author: Routo
-NeuraSelf-UwU - https://github.com/routo-loop/neura-self
+YuleeSelf-UwU - https://github.com/itsyulee/yulee-self
 """
 
 
@@ -25,7 +25,7 @@ import re
 import json
 import os
 
-class NeuraCursePray(commands.Cog):
+class YuleeCursePray(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.state_file = "data/cp_state.json"
@@ -127,9 +127,9 @@ class NeuraCursePray(commands.Cog):
             if rb_cfg.get('enabled', False) and rb_cfg.get('pray_and_curse', False):
                 delay += 5
                 
-            await self.bot.neura_register_command("cursepray", "curse", priority=self.bot.get_cmd_priority("cursepray", 3), delay=delay, initial_offset=20)
+            await self.bot.yulee_register_command("cursepray", "curse", priority=self.bot.get_cmd_priority("cursepray", 3), delay=delay, initial_offset=20)
             self.trigger_action()
 
 async def setup(bot):
-    cog = NeuraCursePray(bot)
+    cog = YuleeCursePray(bot)
     await bot.add_cog(cog)

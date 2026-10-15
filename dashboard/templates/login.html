@@ -1,14 +1,14 @@
 <!--
-  This file is part of NeuraSelf-UwU.
+  This file is part of YuleeSelf-UwU.
   Copyright (c) 2025-Present Routo
 
-  NeuraSelf-UwU is free software: you can redistribute it and/or modify
+  YuleeSelf-UwU is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
 
   You should have received a copy of the GNU General Public License
-  along with NeuraSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
+  along with YuleeSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
 -->
 
 
@@ -443,7 +443,7 @@
 
 
                         successTriggered = true;
-                        spawnNeuralLines();
+                        spawnNetworkLines();
 
                         setTimeout(() => { window.location.href = '/'; }, 1900);
                     } else {
@@ -496,8 +496,8 @@
 
         const DOTS = Array.from({ length: 55 }, () => new Dot());
 
-        const neural = [];
-        function spawnNeuralLines() {
+        const network = [];
+        function spawnNetworkLines() {
             const cx = W / 2, cy = H / 2;
             const generators = [
                 () => ({ sx: Math.random() * W, sy: 0 }),
@@ -508,7 +508,7 @@
             for (let i = 0; i < 80; i++) {
                 const g = generators[Math.floor(Math.random() * generators.length)]();
                 const delay = i * 18;                         // stagger
-                neural.push({
+                network.push({
                     sx: g.sx, sy: g.sy,
                     cx: g.sx + (cx - g.sx) * (0.3 + Math.random() * 0.4),
                     cy: g.sy + (cy - g.sy) * (0.3 + Math.random() * 0.4),
@@ -523,9 +523,9 @@
         }
 
         let rafTime = 0;
-        function drawNeuralLines(dt) {
+        function drawNetworkLines(dt) {
             ctx.lineWidth = 1.2;
-            neural.forEach(n => {
+            network.forEach(n => {
                 n.elapsed += dt;
                 if (n.elapsed < n.delay) return;
                 if (!n.active) n.active = true;
@@ -578,7 +578,7 @@
                     ctx.fill();
                 }
             } else {
-                drawNeuralLines(dt);
+                drawNetworkLines(dt);
             }
 
             requestAnimationFrame(loop);

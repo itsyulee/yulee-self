@@ -158,7 +158,7 @@ echo  Installed to:
 echo  %INSTALL_DIR%
 echo.
 echo  Run:
-echo  %INSTALL_DIR%\neura.py
+echo  %INSTALL_DIR%\yulee.py
 echo.
 
 pause

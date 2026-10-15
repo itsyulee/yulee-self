@@ -1,18 +1,18 @@
-# This file is part of NeuraSelf-UwU.
+# This file is part of YuleeSelf-UwU.
 # Copyright (c) 2025-Present Routo
 #
-# NeuraSelf-UwU is free software: you can redistribute it and/or modify
+# YuleeSelf-UwU is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
 # You should have received a copy of the GNU General Public License
-# along with NeuraSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
+# along with YuleeSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
 
 
 """
 Author: Routo
-NeuraSelf-UwU - https://github.com/routo-loop/neura-self
+YuleeSelf-UwU - https://github.com/itsyulee/yulee-self
 """
 
 
@@ -149,7 +149,7 @@ class Cookie(commands.Cog):
                     self.bot.log("INFO", f"Cookie on cooldown: {h}h {m}m remaining.")
                 
                 cmd = f"cookie {user_to_cookie}"
-                await self.bot.neura_register_command("cookie", cmd, priority=self.bot.get_cmd_priority("cookie", 4), delay=max(10, delay), initial_offset=0)
+                await self.bot.yulee_register_command("cookie", cmd, priority=self.bot.get_cmd_priority("cookie", 4), delay=max(10, delay), initial_offset=0)
 
 async def setup(bot):
     cog = Cookie(bot)

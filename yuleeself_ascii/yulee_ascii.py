@@ -1,17 +1,17 @@
-# This file is part of NeuraSelf-UwU.
+# This file is part of YuleeSelf-UwU.
 # Copyright (c) 2025-Present Routo
 #
-# NeuraSelf-UwU is free software: you can redistribute it and/or modify
+# YuleeSelf-UwU is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
 # You should have received a copy of the GNU General Public License
-# along with NeuraSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
+# along with YuleeSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
 
 """
 Author: Routo
-NeuraSelf-UwU - https://github.com/routo-loop/neura-self
+YuleeSelf-UwU - https://github.com/itsyulee/yulee-self
 """
 
 
@@ -27,14 +27,14 @@ from rich.live import Live
 
 AUTHOR = "ROUTO"
 
-NEURA_MAIN_LOGO = """[bold #82ddf7]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/bold #82ddf7]
+YULEE_MAIN_LOGO = """[bold #82ddf7]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/bold #82ddf7]
 [bold #f0fbff]                 Y U L E E S E L F[/bold #f0fbff]
 [#82ddf7]                  OwO Automation[/#82ddf7]
 [white]              Customized by zOnisdev[/white]
 [dim]               Original code: Routo[/dim]
 [bold #82ddf7]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/bold #82ddf7]"""
 
-NEURA_SETUP_LOGO = NEURA_MAIN_LOGO.replace("OwO Automation", "Setup Manager ")
+YULEE_SETUP_LOGO = YULEE_MAIN_LOGO.replace("OwO Automation", "Setup Manager ")
 
 NOISE = "█▓▒░@#$%&/=+*<>"
 
@@ -98,9 +98,9 @@ def show_banner(banner_type='main', animate=True):
     os.system('cls' if os.name == 'nt' else 'clear')
     
     if banner_type == 'setup':
-        raw_logo = NEURA_SETUP_LOGO
+        raw_logo = YULEE_SETUP_LOGO
     else:
-        raw_logo = NEURA_MAIN_LOGO
+        raw_logo = YULEE_MAIN_LOGO
         
     logo_lines = raw_logo.splitlines()
 

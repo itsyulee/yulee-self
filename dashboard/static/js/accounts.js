@@ -1,15 +1,15 @@
 /* 
 
-# This file is part of NeuraSelf-UwU.
+# This file is part of YuleeSelf-UwU.
 # Copyright (c) 2025-Present Routo
 #
-# NeuraSelf-UwU is free software: you can redistribute it and/or modify
+# YuleeSelf-UwU is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
 # You should have received a copy of the GNU General Public License
-# along with NeuraSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
+# along with YuleeSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
 
 
 
@@ -79,7 +79,7 @@ function renderAccountGrid() {
         const statusLabel = acc.paused ? 'Paused' : 'Running';
         const avatar = acc.avatar
             ? `<img src="${acc.avatar}" class="account-avatar-lg" alt="">`
-            : `<span class="icon-svg account-avatar-lg account-avatar-fallback" style="--icon: url('/static/assets/neura_icons/discord.svg');"></span>`;
+            : `<span class="icon-svg account-avatar-lg account-avatar-fallback" style="--icon: url('/static/assets/yulee_icons/discord.svg');"></span>`;
         return `
             <div class="account-picker-card ${isSelected ? 'selected' : ''}" onclick="selectAccount('${acc.id}')" role="button" tabindex="0">
                 <div class="account-card-top">
@@ -93,17 +93,17 @@ function renderAccountGrid() {
                 </div>
                 <div class="account-card-stats">
                     <div class="account-stat">
-                        <span class="icon-svg" style="--icon: url('/static/assets/neura_icons/coins.svg');"></span>
+                        <span class="icon-svg" style="--icon: url('/static/assets/yulee_icons/coins.svg');"></span>
                         <div class="account-stat-val">${(acc.cash || 0).toLocaleString()}</div>
                         <div class="account-stat-lbl">Balance</div>
                     </div>
                     <div class="account-stat">
-                        <span class="icon-svg" style="--icon: url('/static/assets/neura_icons/terminal.svg');"></span>
+                        <span class="icon-svg" style="--icon: url('/static/assets/yulee_icons/terminal.svg');"></span>
                         <div class="account-stat-val">${acc.session_total || 0}</div>
                         <div class="account-stat-lbl">Session Cmds</div>
                     </div>
                     <div class="account-stat">
-                        <span class="icon-svg" style="--icon: url('/static/assets/neura_icons/bolt.svg');"></span>
+                        <span class="icon-svg" style="--icon: url('/static/assets/yulee_icons/bolt.svg');"></span>
                         <div class="account-stat-val">${acc.gems_used || 0}</div>
                         <div class="account-stat-lbl">Gems Used</div>
                     </div>

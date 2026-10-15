@@ -1,18 +1,18 @@
-# This file is part of NeuraSelf-UwU.
+# This file is part of YuleeSelf-UwU.
 # Copyright (c) 2025-Present Routo
 #
-# NeuraSelf-UwU is free software: you can redistribute it and/or modify
+# YuleeSelf-UwU is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
 # You should have received a copy of the GNU General Public License
-# along with NeuraSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
+# along with YuleeSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
 
 
 """
 Author: Routo
-NeuraSelf-UwU - https://github.com/routo-loop/neura-self
+YuleeSelf-UwU - https://github.com/itsyulee/yulee-self
 """
 
 
@@ -50,7 +50,7 @@ EMOTE_COMMANDS = ["hug", "poke", "pat", "cuddle", "kiss"]
 
 FALLBACK_TARGETS = ["408785106942164992"]
 
-class NeuraQuestEngine:
+class YuleeQuestEngine:
     def __init__(self, bot):
         self.bot = bot
         self.last_solver_run = 0
@@ -169,7 +169,7 @@ class NeuraQuestEngine:
             return  
         self.last_queued[cmd] = now
         self.bot.log("SYS", f"Quest Engine: Queueing [{cmd}] for {reason}")
-        await self.bot.neura_enqueue(cmd, priority=5)
+        await self.bot.yulee_enqueue(cmd, priority=5)
 
     def is_alt_quest(self, desc):
         socials = [
@@ -203,15 +203,15 @@ class NeuraQuestEngine:
                 continue
 
             if "battle with a friend" in desc:
-                await self.bot.neura_enqueue(f"owo battle <@{instance.user.id}>", priority=5)
+                await self.bot.yulee_enqueue(f"owo battle <@{instance.user.id}>", priority=5)
 
                 async def delayed_ab(inst=instance):
                     await asyncio.sleep(4.0)
-                    await inst.neura_enqueue("owo ab", priority=4, target_channel_id=self.bot.channel_id)
+                    await inst.yulee_enqueue("owo ab", priority=4, target_channel_id=self.bot.channel_id)
 
                 asyncio.create_task(delayed_ab())
                 self.bot.log("SYS", f"Quest Engine: Coordinated friendly battle with {instance.user.name}")
             elif target_cmd:
-                await instance.neura_enqueue(target_cmd, priority=5, target_channel_id=self.bot.channel_id)
+                await instance.yulee_enqueue(target_cmd, priority=5, target_channel_id=self.bot.channel_id)
                 self.bot.log("SYS", f"Quest Engine: Signalled alt {instance.user.name} → [{target_cmd}]")
             break 
