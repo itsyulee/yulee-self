@@ -83,7 +83,7 @@ class Others(commands.Cog):
             if not self.bot.is_message_for_me(message, role="header"):
                 return
             try:
-                cash_match = re.search(r'you currently have[^\d]*(\d{1,3}(?:,\d{3})*)', message.content.lower())
+                cash_match = re.search(r'you currently have[^\d]*(\d[\d,]*)', message.content.lower())
                 if cash_match:
                     cash_str = cash_match.group(1).replace(',', '')
                     is_initial = self.bot.stats['current_cash'] is None

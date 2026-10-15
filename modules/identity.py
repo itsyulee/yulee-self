@@ -71,6 +71,7 @@ class IdentityManager:
                         header_texts.append(self.clean_text(em.description.split('\n')[0]))
             
             for text in header_texts:
+                text = re.sub(r'[^\w\s]', '', text).strip()
                 for ident in clean_idents:
                     if re.search(rf"\b{re.escape(ident)}(?:'s)?\b", text):
                         return True

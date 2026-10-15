@@ -33,8 +33,10 @@ function initDashCharts() {
 
     
 function update(forceLogs = false) {
+    const requestedAccountId = currentAccountId;
     const q = currentAccountId ? `?id=${currentAccountId}` : '';
     return fetch(`/api/stats${q}`, {cache: 'no-store'}).then(r => { if (!r.ok) throw new Error('Failed to load stats'); return r.json(); }).then(d => {
+        if (requestedAccountId !== currentAccountId) return;
         if (forceLogs) lastLogsHash = null;
         if (!d || Object.keys(d).length === 0) return;
         if (d.bot) {
@@ -42,7 +44,7 @@ function update(forceLogs = false) {
             const nameEl = document.getElementById('currentAccountName');
             if (nameEl) nameEl.innerText = `ACCOUNT: ${d.bot.username}`;
         }
-        if (d.cash != null) document.getElementById('cash').innerText = d.cash.toLocaleString();
+        document.getElementById('cash').innerText = d.cash == null ? '—' : d.cash.toLocaleString();
         if (d.uptime) document.getElementById('uptimeDisplay').innerText = d.uptime;
         if (d.logs) renderLogs(d.logs);
         const dot = document.getElementById('statusDot'), lbl = document.getElementById('botStatus');
