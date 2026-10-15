@@ -32,11 +32,33 @@ function initDashCharts() {
 }
 
     
+const controlStatuses = new Map();
+const pendingControls = new Set();
+let controlRevision = 0;
+
+function syncControlButtons() {
+    const status = controlStatuses.get(currentAccountId);
+    const busy = pendingControls.has(currentAccountId);
+    document.querySelectorAll('[data-bot-action]').forEach(button => {
+        const action = button.dataset.botAction;
+        button.disabled = !currentAccountId || busy || !status || status === 'OFFLINE' ||
+            (action === 'start' && status === 'ONLINE') ||
+            (action === 'stop' && status === 'PAUSED');
+        button.setAttribute('aria-busy', String(busy));
+    });
+}
+
 function update(forceLogs = false) {
     const requestedAccountId = currentAccountId;
+    const requestedRevision = controlRevision;
     const q = currentAccountId ? `?id=${currentAccountId}` : '';
     return fetch(`/api/stats${q}`, {cache: 'no-store'}).then(r => { if (!r.ok) throw new Error('Failed to load stats'); return r.json(); }).then(d => {
-        if (requestedAccountId !== currentAccountId) return;
+        if (requestedAccountId !== currentAccountId || requestedRevision !== controlRevision) return;
+        if (!pendingControls.has(requestedAccountId)) {
+            if (d && d.status) controlStatuses.set(requestedAccountId, d.status);
+            else controlStatuses.delete(requestedAccountId);
+            syncControlButtons();
+        }
         if (forceLogs) lastLogsHash = null;
         if (!d || Object.keys(d).length === 0) return;
         if (d.bot) {
@@ -53,11 +75,6 @@ function update(forceLogs = false) {
             document.getElementById('securityAlert').style.display = 'flex';
             document.getElementById('captchaMsg').innerText = d.security.last_message;
 
-            const section = document.getElementById('captcha-solver-section');
-            if (section && section.style.display !== 'block') {
-                const acc = accountsList.find(a => a.id === currentAccountId);
-                if (acc) openEmbeddedCaptcha(currentAccountId, acc.username);
-            }
         } else {
             document.getElementById('securityAlert').style.display = 'none';
         }
@@ -223,16 +240,36 @@ window.resumeBot = function() {
     });
 };
 
-window.action = function(a, el) {
-    console.log(`Executing action: ${a}`);
-    fetch('/api/control', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: a, id: currentAccountId })
-    }).then(async response => {
+window.action = async function(a, el) {
+    a = ({resume: 'start', pause: 'stop'})[a] || a;
+    const accountId = currentAccountId;
+    if (!accountId || pendingControls.has(accountId) || el?.disabled) return;
+    const status = controlStatuses.get(accountId);
+    if ((a === 'start' && status === 'ONLINE') || (a === 'stop' && status === 'PAUSED')) return;
+    pendingControls.add(accountId);
+    controlRevision++;
+    syncControlButtons();
+    try {
+        const response = await fetch('/api/control', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: a, id: accountId })
+        });
         const data = await response.json();
         if (!response.ok || !data.success) throw new Error(data.error || 'Action failed');
+        if (a === 'start' || a === 'stop') {
+            controlStatuses.set(accountId, a === 'start' ? 'ONLINE' : 'PAUSED');
+        }
         showToast('Action sent', 'success');
-        return update();
-    }).catch(error => showToast(error.message, 'error'));
+    } catch (error) {
+        showToast(error.message, 'error');
+    } finally {
+        pendingControls.delete(accountId);
+        controlRevision++;
+        syncControlButtons();
+    }
+    if (accountId === currentAccountId) {
+        try { await update(); }
+        catch (_) { showToast('Failed to refresh status', 'error'); }
+    }
 };

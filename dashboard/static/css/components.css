@@ -831,3 +831,28 @@ textarea:focus {
     from { box-shadow: 0 0 30px var(--fabled-glow), inset 0 0 10px var(--fabled-glow); }
     to { box-shadow: 0 0 60px var(--fabled-glow), inset 0 0 20px var(--fabled-glow); }
 }
+/* Keep disabled controls hit-testable so desktop can show the forbidden cursor.
+   The native disabled attribute and action guard prevent activation. */
+.btn-control[data-bot-action]:disabled,
+.mobile-control-panel .mobile-btn[data-bot-action]:disabled {
+    background: #101e2e;
+    border-color: #192c40;
+    color: #405064;
+    opacity: 0.65;
+    cursor: not-allowed;
+    pointer-events: auto;
+    filter: none;
+    box-shadow: none;
+    transform: none;
+}
+
+[data-bot-action]:disabled > * {
+    pointer-events: none;
+}
+
+@media (hover: none) {
+    .btn-control[data-bot-action]:disabled,
+    .mobile-control-panel .mobile-btn[data-bot-action]:disabled {
+        cursor: default;
+    }
+}

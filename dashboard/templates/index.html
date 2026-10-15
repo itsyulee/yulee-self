@@ -30,7 +30,7 @@
     <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
     <link rel="stylesheet" href="/static/css/base.css?v=2.4.0.ice1">
     <link rel="stylesheet" href="/static/css/layout.css?v=2.4.0.ice1">
-    <link rel="stylesheet" href="/static/css/components.css?v=2.4.0.ice1">
+    <link rel="stylesheet" href="/static/css/components.css?v=controls3">
     <link rel="stylesheet" href="/static/css/pages/accounts.css?v=2.4.0.ice1">
     <link rel="stylesheet" href="/static/css/pages/dashboard.css?v=2.4.0.ice1">
     <link rel="stylesheet" href="/static/css/pages/config.css?v=2.4.0.ice1">
@@ -387,10 +387,10 @@
                     <button class="btn-control gold" onclick="action('cash', this)"><span class="icon-svg"
                             style="--icon: url('/static/assets/yulee_icons/coins.svg');"></span> <span
                             class="btn-text">CHECK CASH</span></button>
-                    <button class="btn-control green" onclick="action('start', this)"><span class="icon-svg"
+                    <button class="btn-control green" data-bot-action="start" disabled onclick="action('start', this)"><span class="icon-svg"
                             style="--icon: url('/static/assets/yulee_icons/play.svg');"></span> <span
                             class="btn-text">START</span></button>
-                    <button class="btn-control red" onclick="action('stop', this)"><span class="icon-svg"
+                    <button class="btn-control red" data-bot-action="stop" disabled onclick="action('stop', this)"><span class="icon-svg"
                             style="--icon: url('/static/assets/yulee_icons/stop.svg');"></span> <span
                             class="btn-text">STOP</span></button>
                 </div>
@@ -580,10 +580,10 @@
     </div>
 
     <div class="mobile-control-panel" id="mobileControls">
-        <button class="mobile-btn green" onclick="action('resume')" title="Start Bot">
+        <button class="mobile-btn green" data-bot-action="start" disabled onclick="action('start', this)" title="Start Bot">
             <span class="icon-svg" style="--icon: url('/static/assets/yulee_icons/play.svg');"></span>
         </button>
-        <button class="mobile-btn red" onclick="action('pause')" title="Pause Bot">
+        <button class="mobile-btn red" data-bot-action="stop" disabled onclick="action('stop', this)" title="Pause Bot">
             <span class="icon-svg" style="--icon: url('/static/assets/yulee_icons/stop.svg');"></span>
         </button>
         <button class="mobile-btn gold" onclick="action('checkcash')" title="Check Cash">
@@ -593,11 +593,11 @@
 
     <script src="/static/js/core.js"></script>
     <script src="/static/js/navigation.js"></script>
-    <script src="/static/js/accounts.js?v=multiuser1"></script>
+    <script src="/static/js/accounts.js?v=controls2"></script>
     <script src="/static/js/proxies.js?v=multiuser1"></script>
     <script src="/static/js/security.js"></script>
     <script src="/static/js/config.js"></script>
-    <script src="/static/js/dashboard.js"></script>
+    <script src="/static/js/dashboard.js?v=controls2"></script>
     <script src="/static/js/history.js"></script>
     <script src="/static/js/init.js"></script>
 </body>

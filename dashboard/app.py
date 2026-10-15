@@ -479,7 +479,7 @@ def control():
     
     if not bot: return jsonify({'success': False, 'error': 'Bot not found'})
     
-    if action == 'stop':
+    if action in ('stop', 'pause'):
         bot.paused = True
         bot.log("SYS", "Bot STOPPED via Dashboard")
             

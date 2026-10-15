@@ -31,6 +31,7 @@ window.fetchAccounts = async function() {
             }
         }
         if (!data.length) currentAccountId = null;
+        syncControlButtons();
         renderAccountGrid();
         updateGlobalAccountName();
         if (!document.getElementById('account-form-modal')?.classList.contains('visible')) fetchAccountConfig();
@@ -57,6 +58,7 @@ function updateGlobalAccountName() {
 window.selectAccount = function(id) {
     console.log(`Selecting account: ${id}`);
     currentAccountId = id;
+    syncControlButtons();
     try { sessionStorage.setItem('yulee:selected-account', String(id)); } catch (_) {}
     renderAccountGrid();
     const acc = accountsList.find(a => a.id === id);
