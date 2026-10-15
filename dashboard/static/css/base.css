@@ -1,0 +1,131 @@
+/* 
+
+# This file is part of NeuraSelf-UwU.
+# Copyright (c) 2025-Present Routo
+#
+# NeuraSelf-UwU is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# You should have received a copy of the GNU General Public License
+# along with NeuraSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
+
+
+
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Rajdhani:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap');
+
+:root {
+    --primary: #82ddf7;
+    --primary-dim: rgba(130, 221, 247, 0.1);
+    --bg-dark: #102437;
+    --bg-card: #1b354a;
+    --text-main: #f0fbff;
+    --text-muted: #a7c9db;
+    --border: #345469;
+    --success: #00ff88;
+    --warning: #ffcc00;
+    --danger: #ff4d4d;
+    --font-heading: 'Orbitron', sans-serif;
+    --font-body: 'Rajdhani', sans-serif;
+    --font-mono: 'Roboto Mono', monospace;
+    --common: #d97706;
+    --common-glow: rgba(217, 119, 6, 0.2);
+    --uncommon: #22c55e;
+    --uncommon-glow: rgba(34, 197, 94, 0.4);
+    --rare: #eab308;
+    --rare-glow: rgba(234, 179, 8, 0.6);
+    --epic: #3b82f6;
+    --epic-glow: rgba(59, 130, 246, 0.7);
+    --mythic: #a855f7;
+    --mythic-glow: rgba(168, 85, 247, 0.8);
+    --legendary: #fbde00;
+    --legendary-glow: rgb(255, 238, 0);
+    --fabled: #00ffff;
+    --fabled-glow: rgba(0, 255, 255, 1);
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: var(--font-body);
+    height: 100vh;
+    overflow: hidden;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track { background: #1a364b; }
+::-webkit-scrollbar-thumb { background: #4f7287; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #82ddf7; }
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes pulseGlow {
+    from { text-shadow: 0 0 10px rgba(130, 221, 247, 0.4); }
+    to { text-shadow: 0 0 20px rgba(130, 221, 247, 0.9); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseInput {
+    0% { box-shadow: 0 0 5px #82ddf7, 0 0 10px #82ddf7 inset; }
+    100% { box-shadow: 0 0 15px #82ddf7, 0 0 25px #82ddf7 inset; }
+}
+
+@keyframes legendary-pulse {
+    0% { box-shadow: 0 0 20px var(--legendary-glow); }
+    50% { box-shadow: 0 0 40px var(--legendary-glow); }
+    100% { box-shadow: 0 0 20px var(--legendary-glow); }
+}
+
+@keyframes fabled-glow {
+    from { box-shadow: 0 0 30px var(--fabled-glow), inset 0 0 10px var(--fabled-glow); }
+    to { box-shadow: 0 0 60px var(--fabled-glow), inset 0 0 20px var(--fabled-glow); }
+}
+
+@keyframes borderBlink {
+    50% { border-color: transparent; }
+}
+
+.glowing-text {
+    color: #82ddf7;
+    text-shadow: 0 0 10px rgba(130, 221, 247, 0.7);
+    animation: pulseGlow 2s infinite alternate;
+}
+/* YULEE SELF — Icy blue and frost-white */
+:root {
+  --primary: #82ddf7;
+  --primary-dim: rgba(130,221,247,.13);
+  --bg-dark: #102437;
+  --bg-card: #1b354a;
+  --text-main: #f0fbff;
+  --text-muted: #a7c9db;
+  --border: #34566b;
+  --success: #6ce8bc;
+  --warning: #ffd38b;
+  --danger: #ff718a;
+}
+body { background: #102437; }
+::-webkit-scrollbar-track { background: #122a3f; }
+::-webkit-scrollbar-thumb { background: #41677e; }
+::-webkit-scrollbar-thumb:hover { background: #82ddf7; }

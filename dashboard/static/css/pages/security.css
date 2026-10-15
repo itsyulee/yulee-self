@@ -1,0 +1,349 @@
+/* 
+
+# This file is part of NeuraSelf-UwU.
+# Copyright (c) 2025-Present Routo
+#
+# NeuraSelf-UwU is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# You should have received a copy of the GNU General Public License
+# along with NeuraSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
+
+
+
+*/
+
+.security-stats-container { margin-top: 20px; }
+.sec-grid-title {
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    color: var(--primary);
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+.security-accounts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 25px;
+}
+
+.sec-account-card {
+    background: linear-gradient(145deg, #254358 0%, #12293d 100%);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+}
+.sec-account-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--border);
+    transition: 0.3s;
+}
+.sec-account-card:hover {
+    border-color: var(--primary);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+.sec-account-card.selected::before {
+    background: var(--primary);
+    box-shadow: 0 0 15px var(--primary);
+}
+.sec-account-card.alert-active {
+    border-color: var(--danger);
+    animation: borderBlink 2s infinite;
+}
+.sec-acc-header {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    min-width: 0;
+}
+.sec-acc-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    min-width: 0;
+    flex: 1;
+}
+.sec-acc-text { min-width: 0; flex: 1; }
+.sec-acc-name {
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    color: #fff;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.sec-acc-status {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+.sec-acc-id {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: #a5bdca;
+    margin-bottom: 6px;
+    word-break: break-all;
+    line-height: 1.3;
+}
+.sec-acc-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+.sec-mini-stat {
+    text-align: center;
+}
+.sec-mini-stat .val {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 2px;
+}
+.sec-mini-stat .lbl {
+    font-size: 0.65rem;
+    color: #829fb0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.alert-box {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--danger);
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.alert-msg {
+    color: var(--danger);
+    font-family: var(--font-mono);
+    font-size: 1.2rem;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+#captcha-solver-section .module-card { 
+    background: rgba(21, 21, 24, 0.4);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 24px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-block;
+    width: 100%;
+    margin-bottom: 24px;
+    break-inside: avoid;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    position: relative;
+    overflow: hidden;
+}
+#captcha-solver-section .module-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(130, 221, 247, 0.2), transparent);
+}
+#hcaptcha-container {
+    margin-bottom: 20px;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+.notification-bell {
+    position: relative;
+    cursor: pointer;
+    display: inline-block;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+.notification-bell:hover {
+    background: rgba(130, 221, 247, 0.1);
+}
+.notification-bell.has-alert .icon-svg {
+    background-color: var(--warning) !important;
+    animation: bellRing 0.5s ease-in-out;
+}
+@keyframes bellRing {
+    0%, 100% { transform: rotate(0); }
+    25% { transform: rotate(15deg); }
+    50% { transform: rotate(-15deg); }
+    75% { transform: rotate(10deg); }
+}
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--danger);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 50%;
+    min-width: 18px;
+    text-align: center;
+    font-family: var(--font-mono);
+    line-height: 1.4;
+}
+.notification-dropdown {
+    position: absolute;
+    top: 40px;
+    right: 0;
+    width: 320px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: #254258;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 8px 0;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    z-index: 9999;
+    display: none;
+}
+.notification-dropdown .pending-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.notification-dropdown .pending-item:last-child {
+    border-bottom: none;
+}
+.pending-name {
+    font-weight: 600;
+    color: #edf7ff;
+    flex: 1;
+}
+.pending-timer {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    margin: 0 12px;
+}
+.solve-btn {
+    background: rgba(130, 221, 247, 0.15);
+    border-color: var(--primary);
+    color: var(--primary);
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.solve-btn:hover {
+    background: var(--primary);
+    color: #fff;
+}
+
+
+.urgency-green .pending-timer { color: var(--success); }
+.urgency-yellow .pending-timer { color: var(--warning); }
+.urgency-orange .pending-timer { color: #f97316; }
+.urgency-red .pending-timer { color: var(--danger); }
+.urgency-critical .pending-timer {
+    color: var(--danger);
+    animation: blinkText 0.5s infinite;
+}
+@keyframes blinkText {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+}
+
+
+#captcha-cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+}
+.captcha-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.3s;
+}
+.captcha-card.urgency-green { border-left: 4px solid var(--success); }
+.captcha-card.urgency-yellow { border-left: 4px solid var(--warning); }
+.captcha-card.urgency-orange { border-left: 4px solid #f97316; }
+.captcha-card.urgency-red { border-left: 4px solid var(--danger); }
+.captcha-card.urgency-critical {
+    border-left: 4px solid var(--danger);
+    animation: borderPulse 1s infinite;
+}
+@keyframes borderPulse {
+    0%, 100% { border-color: var(--danger); }
+    50% { border-color: transparent; }
+}
+.captcha-card-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+.captcha-account {
+    font-weight: 600;
+    color: #fff;
+}
+.captcha-timer {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+.captcha-card-body {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+.captcha-card-body .btn-control {
+    padding: 6px 16px;
+    font-size: 0.8rem;
+    min-height: 32px;
+}
+.captcha-card-body .btn-control.gold {
+    background: transparent;
+    border-color: var(--warning);
+    color: var(--warning);
+}
+.captcha-card-body .btn-control.gold:hover {
+    background: var(--warning);
+    color: #000;
+}
+.captcha-card-body .btn-control:not(.gold) {
+    background: #3b5e73;
+    color: #bed1dc;
+}
+.captcha-card-body .btn-control:not(.gold):hover {
+    background: #7192a5;
+    color: #fff;
+}

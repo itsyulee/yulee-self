@@ -1,0 +1,125 @@
+# ===============================
+# Python cache & bytecode
+# ===============================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# ===============================
+# Distribution / packaging
+# ===============================
+.Python
+build/
+dist/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ===============================
+# Sensitive / local data
+# ===============================
+
+tokens.txt
+*.local
+
+# ===============================
+# Virtual environments
+# ===============================
+venv/
+env/
+ENV/
+.venv/
+.ENV/
+.env/
+.env.*
+.virtualenv/
+
+# ===============================
+# PyInstaller
+# ===============================
+dist/
+
+# ===============================
+# Dependency managers
+# ===============================
+Pipfile.lock
+poetry.lock
+
+# ===============================
+# Type checkers
+# ===============================
+.pyre/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+
+# ===============================
+# Testing & coverage
+# ===============================
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.cache/
+.pytest_cache/
+junit-*.xml
+
+# ===============================
+# Documentation
+# ===============================
+docs/_build/
+
+# ===============================
+# IDEs & Editors
+# ===============================
+.idea/
+.vscode/
+*.code-workspace
+
+# ===============================
+# OS files
+# ===============================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ===============================
+# Backups & temp files
+# ===============================
+*.bak
+*.swp
+*~
+*.log
+
+# ===============================
+# Jupyter
+# ===============================
+.ipynb_checkpoints/
+
+# ===============================
+# Databases
+# ===============================
+*.sqlite
+*.sqlite3
+*.db

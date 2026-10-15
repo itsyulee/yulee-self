@@ -1,0 +1,73 @@
+/* 
+
+# This file is part of NeuraSelf-UwU.
+# Copyright (c) 2025-Present Routo
+#
+# NeuraSelf-UwU is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# You should have received a copy of the GNU General Public License
+# along with NeuraSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
+
+
+
+*/
+
+.proxy-stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.proxy-stat-card {
+    background: linear-gradient(145deg, #254358 0%, #12293d 100%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+}
+.proxy-stat-card span {
+    display: block;
+    font-size: 1.5rem;
+    font-family: var(--font-heading);
+    color: var(--text);
+}
+.proxy-stat-card.ok span { color: #22c55e; }
+.proxy-stat-card label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.proxy-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.proxy-bulk-panel {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 24px;
+}
+.proxy-bulk-textarea {
+    width: 100%;
+    min-height: 120px;
+    background: #102437;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    padding: 12px;
+    margin: 8px 0 12px;
+    resize: vertical;
+}
+.proxy-bulk-result { margin-top: 10px; font-size: 0.85rem; }
+.proxy-bulk-ok { color: #22c55e; }
+.proxy-bulk-err { color: #f59e0b; margin-top: 6px; }

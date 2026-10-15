@@ -1,0 +1,541 @@
+<!--
+
+# This file is part of YuleeSelf-UwU.
+# Copyright (c) 2025-Present Routo
+#
+# YuleeSelf-UwU is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# You should have received a copy of the GNU General Public License
+# along with YuleeSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
+
+
+-->
+
+<!DOCTYPE html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project1</title>
+    <link rel="icon" type="image/png" href="/static/assets/yuleelogo.png">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Exo+2:wght@300;400;600;800&family=Rajdhani:wght@400;600&family=Roboto+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+    <link rel="stylesheet" href="/static/css/base.css?v=2.4.0.ice1">
+    <link rel="stylesheet" href="/static/css/layout.css?v=2.4.0.ice1">
+    <link rel="stylesheet" href="/static/css/components.css?v=2.4.0.ice1">
+    <link rel="stylesheet" href="/static/css/pages/accounts.css?v=2.4.0.ice1">
+    <link rel="stylesheet" href="/static/css/pages/dashboard.css?v=2.4.0.ice1">
+    <link rel="stylesheet" href="/static/css/pages/config.css?v=2.4.0.ice1">
+    <link rel="stylesheet" href="/static/css/pages/proxies.css?v=2.4.0.ice1">
+    <link rel="stylesheet" href="/static/css/pages/security.css?v=2.4.0.ice1">
+    <link rel="stylesheet" href="/static/css/pages/history.css?v=2.4.0.ice1">
+    <link rel="stylesheet" href="/static/css/responsive.css?v=2.4.0.ice1">
+</head>
+
+<body>
+    <div id="floating-save-bar">
+        <div class="save-bar-text">Careful — you have unsaved changes!</div>
+        <div class="save-bar-btns">
+            <button class="btn-discard-floating" onclick="discardChanges()">Reset</button>
+            <button class="btn-save-all-floating" onclick="saveToAllConfigs()">Save to All Accounts</button>
+            <button class="btn-save-floating" onclick="saveAllConfigs()">Save Changes</button>
+        </div>
+    </div>
+    <div id="neura-toast" class="neura-toast">
+        <img src="/static/assets/neura_icons/floppy-disk.svg"
+            style="width:20px; height:20px; filter: brightness(0) invert(1);">
+        <span id="toast-message">Settings Saved!</span>
+    </div>
+
+    <!-- Fixed Top Bar -->
+    <div class="top-bar-fixed">
+        <div class="top-bar-left">
+            <div class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                <span></span><span></span><span></span>
+            </div>
+            <div class="dash-logo-header">
+                <img src="/static/assets/yuleelogo.png" alt="YULEESELF" class="dash-logo-img">
+                <span class="dash-logo-text">YULEESELF</span>
+            </div>
+        </div>
+        <div class="top-bar-center">
+            <span id="currentAccountName" class="account-name-display">Loading account...</span>
+        </div>
+        <div class="top-bar-right">
+            <div id="notification-container" style="position: relative;">
+                <span id="notification-bell" class="notification-bell" onclick="toggleNotificationDropdown()">
+                    <span class="icon-svg"
+                        style="--icon: url('/static/assets/neura_icons/bell.svg'); width: 24px; height: 24px;"></span>
+                    <span id="notification-badge" class="notification-badge" style="display:none;">0</span>
+                </span>
+                <div id="notification-dropdown" class="notification-dropdown" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar-overlay" onclick="toggleMobileMenu()"></div>
+
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <img src="/static/assets/yuleelogo.png" alt="YULEESELF" style="height: 32px; margin-right: 8px;">
+                <span class="brand-main">YULEE</span>
+                <span class="brand-sub">SELF</span>
+                <div class="mobile-sidebar-close" onclick="toggleMobileMenu()">&times;</div>
+            </div>
+            <nav class="nav-links">
+                <a class="nav-item active" onclick="nav('accounts', this)"><span class="icon-svg"
+                        style="--icon: url('/static/assets/neura_icons/users.svg');"></span> Accounts</a>
+                <a class="nav-item" onclick="nav('dash', this)"><span class="icon-svg"
+                        style="--icon: url('/static/assets/neura_icons/chart-pie.svg');"></span> Dashboard</a>
+                <a class="nav-item" onclick="nav('config', this)"><span class="icon-svg"
+                        style="--icon: url('/static/assets/neura_icons/sliders.svg');"></span> Configuration</a>
+                <a class="nav-item" onclick="nav('proxies', this)"><span class="icon-svg"
+                        style="--icon: url('/static/assets/neura_icons/layers.svg');"></span> Proxies</a>
+                <a class="nav-item" onclick="nav('security', this)"><span class="icon-svg"
+                        style="--icon: url('/static/assets/neura_icons/shield-halved.svg');"></span> Security</a>
+                <a class="nav-item" onclick="nav('history', this)"><span class="icon-svg"
+                        style="--icon: url('/static/assets/neura_icons/clock-rotate-left.svg');"></span> History</a>
+                <a class="nav-item" onclick="nav('logs', this)"><span class="icon-svg"
+                        style="--icon: url('/static/assets/neura_icons/terminal.svg');"></span> Terminal</a>
+                <a class="nav-item" onclick="location.href='/logout'" style="color: #ff4444 !important;"><span
+                        class="icon-svg" style="--icon: url('/static/assets/neura_icons/logout.svg');"></span>
+                    Logout</a>
+            </nav>
+            <div style="margin-top:auto">
+                <div class="status-indicator">
+                    <div class="ping-dot" id="statusDot"></div>
+                    <span id="botStatus">ONLINE</span>
+                </div>
+                <div class="social-links">
+                    <a href="https://github.com/routo-loop" target="_blank"><span class="icon-svg social-btn"
+                            style="--icon: url('/static/assets/neura_icons/github.svg');" title="GitHub"></span></a>
+                    <a href="https://discord.gg/88jNZK2hkw" target="_blank"><span class="icon-svg social-btn"
+                            style="--icon: url('/static/assets/neura_icons/discord.svg');" title="Discord"></span></a>
+                    <a href="https://www.youtube.com/@dev1-9?sub_confirmation=1" target="_blank"><span
+                            class="icon-svg social-btn" style="--icon: url('/static/assets/neura_icons/youtube.svg');"
+                            title="YouTube"></span></a>
+                </div>
+                <div class="version glowing-text">v2.4.4</div>
+            </div>
+        </aside>
+
+        <main class="content-area">
+            <!-- Accounts Tab -->
+            <div id="accounts" class="active-view view">
+                <p class="accounts-page-hint">Online accounts — select one for Dashboard control. Manage credentials
+                    below.</p>
+                <h3 class="section-subtitle">Online</h3>
+                <div id="accounts-grid" class="accounts-picker-grid">
+                    <div class="no-data">Loading accounts…</div>
+                </div>
+                <h3 class="section-subtitle" style="margin-top: 32px;">Manage Accounts</h3>
+                <p class="accounts-page-hint">Add or edit accounts. Proxy is optional — leave as direct if not needed.
+                    Restart bot after changes.</p>
+                <div class="account-manage-toolbar">
+                    <button class="btn-control green" onclick="showAccountForm()"><span class="icon-svg"
+                            style="--icon: url('/static/assets/neura_icons/plus.svg');"></span> <span
+                            class="btn-text">ADD ACCOUNT</span></button>
+                </div>
+                <div id="account-config-list" class="account-config-list"></div>
+                <div id="account-form-modal" class="proxy-modal">
+                    <div class="proxy-modal-inner">
+                        <h3 id="acct-form-title">Add Account</h3>
+                        <input type="hidden" id="acct-form-index" value="-1">
+                        <label class="form-label">Name</label>
+                        <input type="text" id="acct-form-name" class="cfg-input" placeholder="MainAccount">
+                        <label class="form-label">Token</label>
+                        <input type="password" id="acct-form-token" class="cfg-input" placeholder="Discord user token">
+                        <label class="form-label">Channel IDs (space separated)</label>
+                        <input type="text" id="acct-form-channels" class="cfg-input" placeholder="123456789 987654321">
+                        <label class="form-label">Proxy (optional)</label>
+                        <select id="acct-form-proxy" class="cfg-input">
+                            <option value="">None (direct)</option>
+                        </select>
+                        <label class="form-label"><input type="checkbox" id="acct-form-enabled" checked> Enabled</label>
+                        <div class="proxy-modal-actions">
+                            <button class="btn-control" onclick="hideAccountForm()">Cancel</button>
+                            <button class="btn-control green" onclick="saveAccountForm()">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Proxies Tab -->
+            <div id="proxies" class="view">
+                <p class="accounts-page-hint">Optional per-account proxies. Bulk paste supported — one proxy per line.
+                </p>
+                <div class="proxy-stats-bar">
+                    <div class="proxy-stat-card"><span id="proxy-stat-total">0</span><label>Total</label></div>
+                    <div class="proxy-stat-card"><span id="proxy-stat-enabled">0</span><label>Enabled</label></div>
+                    <div class="proxy-stat-card ok"><span id="proxy-stat-healthy">0</span><label>Healthy</label></div>
+                    <div class="proxy-stat-card"><span id="proxy-stat-assigned">0</span><label>Assigned</label></div>
+                    <div class="proxy-stat-card"><span id="proxy-stat-free">0</span><label>Free</label></div>
+                </div>
+                <div class="proxy-toolbar">
+                    <button class="btn-control green" onclick="showAddProxyModal()"><span class="icon-svg"
+                            style="--icon: url('/static/assets/neura_icons/plus.svg');"></span> <span
+                            class="btn-text">Add Proxy</span></button>
+                    <button class="btn-control" onclick="testAllProxies()"><span class="icon-svg"
+                            style="--icon: url('/static/assets/neura_icons/rotate.svg');"></span> <span
+                            class="btn-text">Test All</span></button>
+                    <button class="btn-control gold" onclick="autoAssignProxies()"><span class="icon-svg"
+                            style="--icon: url('/static/assets/neura_icons/link.svg');"></span> <span
+                            class="btn-text">Auto-Assign</span></button>
+                    <!-- NEW: Delete Failed & Delete All buttons -->
+                    <button class="btn-control red" onclick="deleteFailedProxies()"><span class="icon-svg"
+                            style="--icon: url('/static/assets/neura_icons/trash.svg');"></span> <span
+                            class="btn-text">Delete Failed</span></button>
+                    <button class="btn-control red" onclick="deleteAllProxies()"><span class="icon-svg"
+                            style="--icon: url('/static/assets/neura_icons/trash-all.svg');"></span> <span
+                            class="btn-text">Delete All</span></button>
+                </div>
+                <div class="proxy-bulk-panel">
+                    <label class="form-label">Bulk Import (host:port, user:pass@host:port, socks5://...)</label>
+                    <textarea id="proxy-bulk-text" class="proxy-bulk-textarea" rows="6"
+                        placeholder="1.2.3.4:1080&#10;user:pass@5.6.7.8:8080&#10;socks5://host:1080"></textarea>
+                    <button class="btn-control green" onclick="bulkImportProxies()"><span class="icon-svg"
+                            style="--icon: url('/static/assets/neura_icons/cloud-arrow-up.svg');"></span> <span
+                            class="btn-text">Import</span></button>
+                    <div id="proxy-bulk-result" class="proxy-bulk-result"></div>
+                </div>
+                <div class="proxy-table-wrap">
+                    <table class="proxy-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Label</th>
+                                <th>Type</th>
+                                <th>Endpoint</th>
+                                <th>Status</th>
+                                <th>Assigned</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="proxy-table-body">
+                            <tr>
+                                <td colspan="7" class="no-data">Loading proxies…</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="proxy-add-modal" class="proxy-modal">
+                    <div class="proxy-modal-inner">
+                        <h3>Add Proxy</h3>
+                        <label class="form-label">Proxy line</label>
+                        <input type="text" id="proxy-add-line" class="cfg-input"
+                            placeholder="user:pass@host:port or socks5://...">
+                        <div class="proxy-modal-actions">
+                            <button class="btn-control" onclick="hideAddProxyModal()">Cancel</button>
+                            <button class="btn-control green" onclick="addSingleProxy()">Add</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Tab -->
+            <div id="dash" class="view">
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-icon cash"><span class="icon-svg"
+                                style="--icon: url('/static/assets/neura_icons/coins.svg');"></span></div>
+                        <div class="kpi-data" style="cursor:pointer" onclick="action('cash', this)">
+                            <h3>Balance</h3>
+                            <p id="cash">0</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon"><span class="icon-svg"
+                                style="--icon: url('/static/assets/neura_icons/clock.svg');"></span></div>
+                        <div class="kpi-data">
+                            <h3>Uptime</h3>
+                            <p id="uptimeDisplay">00:00:00</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon gun"><span class="icon-svg"
+                                style="--icon: url('/static/assets/neura_icons/gun.svg');"></span></div>
+                        <div class="kpi-data">
+                            <h3>Hunts Today</h3>
+                            <p id="huntsToday">0 <span style="font-size:0.5em; color:var(--success);"
+                                    id="huntsSession">(0 this session)</span></p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon battle"><span class="icon-svg"
+                                style="--icon: url('/static/assets/neura_icons/battle-net.svg');"></span></div>
+                        <div class="kpi-data">
+                            <h3>Battles Today</h3>
+                            <p id="battlesToday">0 <span style="font-size:0.5em; color:#3b82f6;" id="battlesSession">(0
+                                    this session)</span></p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon rate"><span class="icon-svg"
+                                style="--icon: url('/static/assets/neura_icons/bolt.svg');"></span></div>
+                        <div class="kpi-data">
+                            <h3>CPM</h3>
+                            <p id="cpm">0</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon owo"><span class="icon-svg"
+                                style="--icon: url('/static/assets/neura_icons/comments.svg');"></span></div>
+                        <div class="kpi-data">
+                            <h3>OwO Sent</h3>
+                            <p id="totalOwO">0 <span style="font-size:0.5em; color:#a855f7;" id="owoSession">(0 this
+                                    session)</span></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="charts-row-top" style="padding: 0;">
+                    <div class="chart-box" style="flex:2;">
+                        <canvas id="lineChart"></canvas>
+                    </div>
+                    <div class="chart-box" style="flex:1;">
+                        <h2 style="font-size:1.1rem; color:var(--primary); margin:0 0 10px 0;"><span class="icon-svg"
+                                style="--icon: url('/static/assets/neura_icons/clock-rotate-left.svg');"></span>
+                            Scheduled Actions</h2>
+                        <div id="schedulerList"
+                            style="flex:1; overflow-y:auto; padding-right:5px; display:flex; flex-direction:column; gap:8px;">
+                            <div
+                                style="color:#666; font-style:italic; font-size:0.9rem; text-align:center; padding-top:20px;">
+                                Waiting for scheduler data...</div>
+                        </div>
+                    </div>
+                </div>
+                <div id="quest-section"
+                    style="margin-top:20px; background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <h2 style="font-size:1.2rem; color:var(--primary); margin:0;"><span class="icon-svg"
+                                style="--icon: url('/static/assets/neura_icons/list-check.svg');"></span> Active Quests
+                        </h2>
+                        <div id="nextQuestTimer"
+                            style="font-family:var(--font-mono); font-size:0.8rem; background:rgba(255,255,255,0.05); padding:5px 10px; border-radius:4px; color:#aaa;">
+                            Next quest: Loading...</div>
+                    </div>
+                    <div id="questList"
+                        style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:15px;">
+                    </div>
+                </div>
+                <div class="top-controls" style="display:flex; gap:10px; margin-top:20px; justify-content:flex-end;">
+                    <button class="btn-control gold" onclick="action('cash', this)"><span class="icon-svg"
+                            style="--icon: url('/static/assets/neura_icons/coins.svg');"></span> <span
+                            class="btn-text">CHECK CASH</span></button>
+                    <button class="btn-control green" onclick="action('start', this)"><span class="icon-svg"
+                            style="--icon: url('/static/assets/neura_icons/play.svg');"></span> <span
+                            class="btn-text">START</span></button>
+                    <button class="btn-control red" onclick="action('stop', this)"><span class="icon-svg"
+                            style="--icon: url('/static/assets/neura_icons/stop.svg');"></span> <span
+                            class="btn-text">STOP</span></button>
+                </div>
+            </div>
+
+            <!-- Config Tab -->
+            <div id="config" class="view">
+                <div class="cfg-layout">
+                    <aside class="cfg-sidebar">
+                        <div class="cfg-sidebar-head">
+                            <span class="icon-svg" style="--icon: url('/static/assets/neura_icons/layers.svg');"></span>
+                            Categories
+                        </div>
+                        <nav id="config-nav-list" class="cfg-nav"></nav>
+                    </aside>
+                    <div class="cfg-main">
+                        <div class="cfg-toolbar">
+                            <div class="cfg-search-box">
+                                <span class="icon-svg cfg-search-icon"
+                                    style="--icon: url('/static/assets/neura_icons/sliders.svg');"></span>
+                                <input type="search" id="config-search" class="cfg-search-input"
+                                    placeholder="Search settings..." autocomplete="off" spellcheck="false">
+                                <button type="button" class="cfg-search-clear" id="config-search-clear"
+                                    onclick="clearConfigSearch()" title="Clear search" hidden>&times;</button>
+                            </div>
+                            <button class="cfg-save-btn btn-control green" onclick="saveAllConfigs()">
+                                <span class="icon-svg"
+                                    style="--icon: url('/static/assets/neura_icons/floppy-disk.svg');"></span>
+                                <span class="btn-text">Save</span>
+                            </button>
+                        </div>
+                        <div id="config-panel-header" class="cfg-panel-header">
+                            <div id="config-panel-titles"></div>
+                        </div>
+                        <div id="settings-grid" class="cfg-settings-panel"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Tab -->
+            <div id="security" class="view">
+                <div class="top-controls" style="display:flex; gap:10px; margin-bottom:20px;">
+                    <button class="btn-control input-dark" onclick="testSecurity(this)"><span class="icon-svg"
+                            style="--icon: url('/static/assets/neura_icons/flask.svg');"></span> <span
+                            class="btn-text">TEST SYSTEMS</span></button>
+                    <button class="btn-control green" onclick="resumeBot()"><span class="icon-svg"
+                            style="--icon: url('/static/assets/neura_icons/play.svg');"></span> <span
+                            class="btn-text">RESUME BOT</span></button>
+                </div>
+                <div id="securityAlert" class="alert-box" style="display:none; margin-bottom: 20px;">
+                    <div class="alert-msg"><span class="icon-svg"
+                            style="--icon: url('/static/assets/neura_icons/warning.svg');"></span> SECURITY TRIGGERED:
+                        BOT PAUSED</div>
+                    <div id="captchaMsg"
+                        style="color:#aaa; font-family:var(--font-mono); margin-bottom:20px; font-size:0.9rem; border:1px solid #333; padding:10px; border-radius:4px; max-width:80%; text-align:center;">
+                    </div>
+                </div>
+                <div id="captcha-solver-section" class="module-card" style="display:none; margin-bottom: 20px;">
+                    <div class="module-header" style="cursor:default;">
+                        <h3 style="color:var(--primary); margin:0; font-family:var(--font-heading);"><span
+                                class="icon-svg"
+                                style="--icon: url('/static/assets/neura_icons/shield-halved.svg');"></span> Solve
+                            Captcha</h3>
+                    </div>
+                    <div style="padding:20px;">
+                        <div id="hcaptcha-container"
+                            style="margin-bottom:20px; min-height:120px; display:flex; align-items:center; justify-content:center;">
+                            <div class="no-data">Loading hCaptcha...</div>
+                        </div>
+                        <div style="display:flex; gap:10px; justify-content:flex-end;">
+                            <button class="btn-control" onclick="cancelEmbeddedCaptcha()"
+                                style="background:#333; color:#fff;">Cancel</button>
+                            <button class="btn-control green" onclick="reloadEmbeddedCaptcha()"
+                                style="background:var(--primary); color:#fff;">Reload</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="security-stats-container">
+                    <h2 class="sec-grid-title"><span class="icon-svg"
+                            style="--icon: url('/static/assets/neura_icons/users.svg');"></span> Account Security Matrix
+                    </h2>
+                    <div id="security-accounts-grid" class="security-accounts-grid">
+                        <div class="no-data">Scanning for active accounts...</div>
+                    </div>
+                    <div id="captcha-cards-container" style="margin-top:20px;"></div>
+                </div>
+            </div>
+
+            <!-- History Tab -->
+            <div id="history" class="view">
+                <div class="top-controls" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px;">
+                    <input type="date" id="historyStartDate" class="field-input"
+                        style="padding:8px; border-radius:6px; background:rgba(255,255,255,0.05); color:#fff; border:1px solid #333;"
+                        onchange="loadHistory()">
+                    <span style="color:#aaa;">to</span>
+                    <input type="date" id="historyEndDate" class="field-input"
+                        style="padding:8px; border-radius:6px; background:rgba(255,255,255,0.05); color:#fff; border:1px solid #333;"
+                        onchange="loadHistory()">
+                    <select id="session-select" class="session-select" onchange="renderCharts()">
+                        <option value="all">ALL SESSIONS IN RANGE</option>
+                    </select>
+                    <button class="btn-control input-dark" onclick="loadHistory()"><span class="icon-svg"
+                            style="--icon: url('/static/assets/neura_icons/sync.svg');"></span> <span
+                            class="btn-text">REFRESH</span></button>
+                </div>
+                <div class="analytics-grid">
+                    <div class="kpi-card" style="flex-direction:column; align-items:flex-start;">
+                        <div style="color:var(--text-muted); font-size:0.9em; margin-bottom:10px;"><span
+                                class="icon-svg" style="--icon: url('/static/assets/neura_icons/layers.svg');"></span>
+                            TOTAL SESSIONS</div>
+                        <div id="total-sessions"
+                            style="font-size:2.5em; font-weight:bold; color:var(--primary); font-family:var(--font-mono);">
+                            0</div>
+                    </div>
+                    <div class="kpi-card" style="flex-direction:column; align-items:flex-start;">
+                        <div style="color:var(--text-muted); font-size:0.9em; margin-bottom:10px;"><span
+                                class="icon-svg" style="--icon: url('/static/assets/neura_icons/gun.svg');"></span>
+                            ALL-TIME HUNTS</div>
+                        <div id="total-hunts"
+                            style="font-size:2.5em; font-weight:bold; color:var(--success); font-family:var(--font-mono);">
+                            0</div>
+                    </div>
+                    <div class="kpi-card" style="flex-direction:column; align-items:flex-start;">
+                        <div style="color:var(--text-muted); font-size:0.9em; margin-bottom:10px;"><span
+                                class="icon-svg"
+                                style="--icon: url('/static/assets/neura_icons/battle-net.svg');"></span> ALL-TIME
+                            BATTLES</div>
+                        <div id="total-battles"
+                            style="font-size:2.5em; font-weight:bold; color:#3b82f6; font-family:var(--font-mono);">0
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="flex-direction:column; align-items:flex-start;">
+                        <div style="color:var(--text-muted); font-size:0.9em; margin-bottom:10px;"><span
+                                class="icon-svg" style="--icon: url('/static/assets/neura_icons/terminal.svg');"></span>
+                            TOTAL COMMANDS</div>
+                        <div id="total-cmds"
+                            style="font-size:2.5em; font-weight:bold; color:#fff; font-family:var(--font-mono);">0</div>
+                    </div>
+                    <div class="kpi-card" style="flex-direction:column; align-items:flex-start;">
+                        <div style="color:var(--text-muted); font-size:0.9em; margin-bottom:10px;"><span
+                                class="icon-svg"
+                                style="--icon: url('/static/assets/neura_icons/shield-halved.svg');"></span> CAPTCHAS
+                            SOLVED</div>
+                        <div id="totalCaptchasSolved"
+                            style="font-size:2.5em; font-weight:bold; color:#a855f7; font-family:var(--font-mono);">0
+                        </div>
+                    </div>
+                </div>
+                <div class="charts-row-top">
+                    <div class="chart-box">
+                        <h3><span class="icon-svg"
+                                style="--icon: url('/static/assets/neura_icons/chart-column.svg');"></span> Session
+                            Performance Timeline</h3>
+                        <div class="chart-container"><canvas id="sessionChart"></canvas></div>
+                    </div>
+                    <div class="chart-box">
+                        <h3><span class="icon-svg"
+                                style="--icon: url('/static/assets/neura_icons/chart-pie.svg');"></span> Activity
+                            Distribution</h3>
+                        <div class="chart-container" style="display:flex; justify-content:center; align-items:center;">
+                            <canvas id="pieChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="charts-row-bottom">
+                    <div class="chart-box" style="flex:2;">
+                        <h3><span class="icon-svg" style="--icon: url('/static/assets/neura_icons/money.svg');"></span>
+                            Cash Growth Over Time</h3>
+                        <div class="chart-container"><canvas id="cashHistoryChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terminal Tab -->
+            <div id="logs" class="view">
+                <button class="btn-control" onclick="update()" style="margin-bottom:20px;"><span class="icon-svg"
+                        style="--icon: url('/static/assets/neura_icons/rotate.svg');"></span> <span
+                        class="btn-text">RELOAD LOGS</span></button>
+                <div id="term" class="terminal-window"></div>
+            </div>
+        </main>
+    </div>
+
+    <div class="mobile-control-panel" id="mobileControls">
+        <button class="mobile-btn green" onclick="action('resume')" title="Start Bot">
+            <span class="icon-svg" style="--icon: url('/static/assets/neura_icons/play.svg');"></span>
+        </button>
+        <button class="mobile-btn red" onclick="action('pause')" title="Pause Bot">
+            <span class="icon-svg" style="--icon: url('/static/assets/neura_icons/stop.svg');"></span>
+        </button>
+        <button class="mobile-btn gold" onclick="action('checkcash')" title="Check Cash">
+            <span class="icon-svg" style="--icon: url('/static/assets/neura_icons/money.svg');"></span>
+        </button>
+    </div>
+
+    <script src="/static/js/core.js"></script>
+    <script src="/static/js/navigation.js"></script>
+    <script src="/static/js/accounts.js"></script>
+    <script src="/static/js/proxies.js"></script>
+    <script src="/static/js/security.js"></script>
+    <script src="/static/js/config.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+    <script src="/static/js/history.js"></script>
+    <script src="/static/js/init.js"></script>
+</body>
+
+</html>
