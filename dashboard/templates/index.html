@@ -422,6 +422,11 @@
                                 <span class="btn-text">Save</span>
                             </button>
                         </div>
+                        <div class="cfg-toolbar">
+                            <label for="config-channel-ids">Channel IDs (space separated)</label>
+                            <input type="text" id="config-channel-ids" class="cfg-input" disabled>
+                            <button type="button" class="btn-control" id="save-channel-ids" onclick="saveConfigChannels(this)" disabled>Save Channels</button>
+                        </div>
                         <div id="config-panel-header" class="cfg-panel-header">
                             <div id="config-panel-titles"></div>
                         </div>
@@ -566,7 +571,7 @@
 
             <!-- Terminal Tab -->
             <div id="logs" class="view">
-                <button class="btn-control" onclick="update()" style="margin-bottom:20px;"><span class="icon-svg"
+                <button class="btn-control" onclick="reloadLogs(this)" style="margin-bottom:20px;"><span class="icon-svg"
                         style="--icon: url('/static/assets/yulee_icons/rotate.svg');"></span> <span
                         class="btn-text">RELOAD LOGS</span></button>
                 <div id="term" class="terminal-window"></div>

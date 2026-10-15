@@ -32,17 +32,17 @@ function initDashCharts() {
 }
 
     
-function update() {
+function update(forceLogs = false) {
     const q = currentAccountId ? `?id=${currentAccountId}` : '';
-    fetch(`/api/stats${q}`).then(r => r.json()).then(d => {
-        console.log('Logs received:', d.logs);
+    return fetch(`/api/stats${q}`, {cache: 'no-store'}).then(r => { if (!r.ok) throw new Error('Failed to load stats'); return r.json(); }).then(d => {
+        if (forceLogs) lastLogsHash = null;
         if (!d || Object.keys(d).length === 0) return;
         if (d.bot) {
             console.log(`[Stats Update] ${d.bot.username} (#${d.bot.user_id}): ${Object.keys(d.cmd_states || {}).length} commands in scheduler.`);
             const nameEl = document.getElementById('currentAccountName');
             if (nameEl) nameEl.innerText = `ACCOUNT: ${d.bot.username}`;
         }
-        if (d.cash) document.getElementById('cash').innerText = d.cash.toLocaleString();
+        if (d.cash != null) document.getElementById('cash').innerText = d.cash.toLocaleString();
         if (d.uptime) document.getElementById('uptimeDisplay').innerText = d.uptime;
         if (d.logs) renderLogs(d.logs);
         const dot = document.getElementById('statusDot'), lbl = document.getElementById('botStatus');
@@ -189,17 +189,25 @@ function renderQuests(quests, timer) {
 function renderLogs(logs) {
     const t = document.getElementById('term');
     if (!t) return;
-    const currentHash = logs.slice(0, 5).map(l => l.timestamp).join('|');
+    const currentHash = JSON.stringify([currentAccountId, logs]);
     if (currentHash === lastLogsHash) return;
     lastLogsHash = currentHash;
-    t.innerHTML = logs.map(l => {
+    const follow = !t.children.length || t.scrollHeight - t.scrollTop - t.clientHeight < 48;
+    t.innerHTML = [...logs].reverse().map(l => {
         const tagClass = l.type ? `tag-${l.type.toLowerCase()}` : '';
         const localTime = l.timestamp ? timeFormatter.format(new Date(l.timestamp * 1000)) : l.time;
         const botTag = l.bot_name ? `<span style="color:magenta; margin-right:5px;">[${l.bot_name}]</span>` : '';
         return `<div class="history-item ${l.type ? l.type.toLowerCase() : ''}">${botTag}<span class="history-time">[${localTime}]</span> <span class="history-tag ${tagClass}">${l.type}</span> <span class="history-msg">${l.message}</span></div>`;
     }).join('');
+    if (follow) t.scrollTop = t.scrollHeight;
 }
 
+window.reloadLogs = async function(button) {
+    button.disabled = true;
+    try { await update(true); showToast('Logs reloaded', 'success'); }
+    catch (error) { showToast('Failed to reload logs', 'error'); }
+    finally { button.disabled = false; }
+};
 
 window.resumeBot = function() { 
     console.log("Resuming bot...");
@@ -219,5 +227,10 @@ window.action = function(a, el) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: a, id: currentAccountId })
-    }).then(() => update());
+    }).then(async response => {
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.error || 'Action failed');
+        showToast('Action sent', 'success');
+        return update();
+    }).catch(error => showToast(error.message, 'error'));
 };

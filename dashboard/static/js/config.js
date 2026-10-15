@@ -17,6 +17,7 @@
 
 
 async function loadConfig() {
+    loadConfigChannels();
     const questCfg = currentConfig?.commands?.quest || {};
     if (questCfg.use_alt_account && accountsList.length <= 1) {
         showToast('Alt Account feature requires multiple accounts. Currently only one account is connected.', 'info');
@@ -697,4 +698,44 @@ function collectConfigMatches(obj, path, categoryName, sections, query, out) {
             }
         }
     });
+}
+async function loadConfigChannels() {
+    const id = currentAccountId;
+    const input = document.getElementById('config-channel-ids');
+    const button = document.getElementById('save-channel-ids');
+    input.value = '';
+    input.disabled = button.disabled = true;
+    input.dataset.accountId = '';
+    if (!id) return;
+    try {
+        const response = await fetch(`/api/channels?id=${encodeURIComponent(id)}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || data.error || 'Cannot load channels');
+        if (currentAccountId !== id) return;
+        input.value = data.channels.join(' ');
+        input.dataset.accountId = String(id);
+        input.disabled = button.disabled = false;
+    } catch (error) { showToast(error.message, 'error'); }
+}
+async function saveConfigChannels(button) {
+    const input = document.getElementById('config-channel-ids');
+    const id = input.dataset.accountId;
+    if (!id || id !== String(currentAccountId)) return;
+    const channels = input.value.trim().split(/\s+/).filter(Boolean);
+    if (!channels.length || channels.some(ch => !/^[0-9]{1,22}$/.test(ch))) {
+        showToast('Enter valid Channel IDs separated by spaces.', 'error');
+        return;
+    }
+    button.disabled = true;
+    try {
+        const response = await fetch(`/api/channels?id=${encodeURIComponent(id)}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ channels })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || data.error || 'Save failed');
+        showToast('Channel IDs saved', 'success');
+        await fetchAccountConfig();
+    } catch (error) { showToast(error.message, 'error'); }
+    finally { button.disabled = false; }
 }

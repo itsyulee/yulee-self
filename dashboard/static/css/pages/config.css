@@ -161,7 +161,7 @@
     pointer-events: none;
     z-index: 1;
 }
-.cfg-search-input {
+#config-search.cfg-search-input {
     width: 100%;
     padding: 12px 40px 12px 44px;
     border-radius: 12px;
@@ -619,3 +619,5 @@
     pointer-events: auto;
     opacity: 1;
 }
+#config-search::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+.cfg-search-clear[hidden] { display: none; }

@@ -257,6 +257,29 @@ def get_analytics():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/channels', methods=['GET', 'POST'])
+@login_required
+def account_channels():
+    from utils import proxy_manager
+    account_id = request.args.get('id')
+    if not account_id or not re.fullmatch(r'[0-9]{1,22}', account_id):
+        abort(400, 'Select an online account first')
+    bot = get_bot(account_id)
+    accounts = proxy_manager.load_accounts()
+    account = next((a for a in accounts if a.get('config_id') == getattr(bot, 'config_id', None)), None)
+    if not account:
+        abort(404, 'Account not found')
+    if request.method == 'POST':
+        data = request.get_json(silent=True)
+        channels = data.get('channels') if isinstance(data, dict) else None
+        if not isinstance(channels, list) or not channels or any(
+                not isinstance(ch, str) or not re.fullmatch(r'[0-9]{1,22}', ch) for ch in channels):
+            return jsonify(status='error', message='Enter valid Channel IDs separated by spaces.'), 400
+        account['channels'] = list(dict.fromkeys(channels))
+        proxy_manager.save_accounts(accounts)
+    return jsonify(status='success', channels=account.get('channels', []))
+
+
 @app.route('/api/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
@@ -460,18 +483,22 @@ def control():
         bot.paused = True
         bot.log("SYS", "Bot STOPPED via Dashboard")
             
-    elif action == 'start':
+    elif action in ('start', 'resume'):
         bot.paused = False
         bot.throttle_until = 0
         bot.log("SYS", "Bot RESUMED via Dashboard")
             
-    elif action == 'cash':
+    elif action in ('cash', 'checkcash'):
+        if bot.paused or not bot.active:
+            return jsonify(success=False, error='Start the bot before checking cash.'), 409
         asyncio.run_coroutine_threadsafe(
             bot.send_message(f"{bot.prefix}cash", skip_typing=True, priority=True),
             bot.loop
         )
         state.log_command("CMD", "Manual Cash Check Sent", "info", bot_name=bot.username)
         
+    else:
+        return jsonify(success=False, error='Unknown action'), 400
     return jsonify({'success': True})
 
 @app.route('/api/security', methods=['POST'])
