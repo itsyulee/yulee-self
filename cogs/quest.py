@@ -85,6 +85,8 @@ class Quest(commands.Cog):
         text = message_text(data)
         parsed = parse_tracking(text)
         if parsed is None:
+            if 'weekly' in text.lower() and str(data.get('channel_id')) in {str(c) for c in self.bot.channels}:
+                self.bot.log("SYS", "WEEKLY CLAIM: weekly text received but checklist header not recognized.")
             return
         configured_channel = str(data.get("channel_id")) in {str(c) for c in self.bot.channels}
         if not configured_channel:
@@ -98,7 +100,15 @@ class Quest(commands.Cog):
         if member:
             names.append(member.display_name)
         if not belongs_to_user(text, self.bot.user.id, names):
+            if parsed[0] == 'weekly':
+                self.bot.log("SYS", "WEEKLY CLAIM: skipped; header owner does not match this account.")
             return
+        if parsed[0] == 'weekly':
+            components = parse_v2_message(data)
+            controls = [dict(type=c.name, label=c.label, custom_id=c.custom_id,
+                             disabled=c.disabled) for c in components
+                        if c.name in ('button', 'select_menu')]
+            self.bot.log("SYS", f"WEEKLY CLAIM: paused={self.bot.paused}; controls={controls!r}")
         images = tracking_images(data)
         if not images:
             self.bot.stats.setdefault('quest_images', {}).pop(parsed[0], None)
@@ -111,7 +121,7 @@ class Quest(commands.Cog):
             }
             self.bot.stats[{'quest': 'next_quest_timer', 'daily': 'daily_checklist_timer', 'weekly': 'weekly_checklist_timer'}[kind]] = timer
             self.bot.log("SYS", f"Dashboard synced: {kind} image updated.")
-            if not self.bot.paused and any(c.name == 'button' for c in parse_v2_message(data)):
+            if not self.bot.paused and (kind == 'weekly' or any(c.name == 'button' for c in parse_v2_message(data))):
                 self._parse_quests_v2(parse_v2_message(data), data)
             return
         self._sync_tracking(text)
@@ -154,6 +164,8 @@ class Quest(commands.Cog):
         # Only use actual enabled buttons on the verified owner's message.
         # Generic Claim may open a selector; do not invent selector values.
         if not self.bot.config.get('commands', {}).get('quest', {}).get('auto_claim', True):
+            if 'weekly' in message_text(message_data).lower():
+                self.bot.log("SYS", "WEEKLY CLAIM: auto_claim is disabled in quest config.")
             return
         parsed = parse_tracking(message_text(message_data))
         if not parsed:
@@ -167,6 +179,7 @@ class Quest(commands.Cog):
                 slots[title] = int(match.group(1))
         completed_slots = {slots[q['description']] for q in parsed[1]
                            if q['completed'] and q['description'] in slots}
+        matched_claim = False
         for comp in components:
             if comp.name != 'button' or not comp.custom_id or comp.disabled:
                 continue
@@ -176,9 +189,12 @@ class Quest(commands.Cog):
                 'claim', 'claim reward', 'claim rewards', 'claim all', 'claim all rewards'
             }
             if explicit_claim or (match and int(match.group(1)) in completed_slots):
+                matched_claim = True
                 key = (str(message_data.get('id')), comp.custom_id)
                 now = time.time()
                 if now - self._claim_attempts.get(key, 0) < 60:
+                    if parsed[0] == 'weekly':
+                        self.bot.log("SYS", "WEEKLY CLAIM: waiting for 60-second retry cooldown.")
                     continue
                 self._claim_attempts = {k: t for k, t in self._claim_attempts.items() if now - t < 300}
                 self._claim_attempts[key] = now
@@ -190,6 +206,8 @@ class Quest(commands.Cog):
                     author_id=message_data['author']['id'],
                     guild_id=message_data.get('guild_id'),
                     flags=message_data.get('flags', 0)))
+        if parsed[0] == 'weekly' and not matched_claim:
+            self.bot.log("SYS", "WEEKLY CLAIM: no enabled supported Claim button found.")
 
     @commands.Cog.listener()
     async def on_message(self, message):
