@@ -48,11 +48,16 @@ class YuleeGems(commands.Cog):
         return int(nums) if nums else 0
 
     def find_gems_available(self, content):
-        matches = re.findall(r"(?:`|\*\*)?(\d{2,3})(?:`|\*\*)?.*?([⁰¹²³⁴⁵⁶⁷⁸⁹0-9]+)", content)
+        # Emoji IDs and gem names contain digits; neither is an item quantity.
+        content = re.sub(r"<a?:\w+:\d+>", " ", content)
+        content = content.translate(str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹", "0123456789"))
+        valid_ids = {gid for ids in self.gem_tiers.values() for gid in ids}
         available = {}
-        for gid, count_str in matches:
-            if gid.isdigit(): 
-                available[gid] = self.convert_small_numbers(count_str)
+        pattern = r"(?:`{1,3}|\*\*)(\d{2,3})(?:`{1,3}|\*\*)[ \t]*(?:[x×:]\s*)?([\d,]+)"
+        for gid, count in re.findall(pattern, content):
+            gid = gid.zfill(3)
+            if gid in valid_ids:
+                available[gid] = int(count.replace(',', ''))
         return available
 
     def find_gems_to_use(self, available, target_types=None):
@@ -141,7 +146,10 @@ class YuleeGems(commands.Cog):
         if str(message.channel.id) not in all_channels:
             return
 
-        content = message.content.lower()
+        content = self.bot.get_full_content(message)
+        # Retry depleted inventories periodically (lootboxes can add new gems).
+        if time.time() - self.last_inv_time > 60:
+            state.missing_gems_cache.pop(self.bot.user_id, None)
         is_for_me = self.bot.is_message_for_me(message)
         
         if not is_for_me and (time.time() - self.bot.last_sent_time) < 5:
@@ -243,7 +251,7 @@ class YuleeGems(commands.Cog):
                     pass
             return
 
-        if ("'s inventory" in content or "'s gems" in content) and "**" in content:
+        if ("'s inventory" in content or "'s gems" in content):
              if state.checking_gems.get(self.bot.user_id):
                 if not self.bot.is_message_for_me(message, role="header"):
                     if not self.bot.is_message_for_me(message):
@@ -253,9 +261,10 @@ class YuleeGems(commands.Cog):
                 missing_types = gem_info.get("types", ["huntGem", "empoweredGem", "luckyGem"])
 
                 state.checking_gems[self.bot.user_id] = False
+                self.last_inv_time = time.time()
                 
-                available = self.find_gems_available(message.content)
-                to_use = self.find_gems_to_use(available, target_types=missing_types)
+                available = self.find_gems_available(content)
+                to_use = self.find_gems_to_use(available.copy(), target_types=missing_types)
 
                 if self.bot.user_id not in state.missing_gems_cache:
                     state.missing_gems_cache[self.bot.user_id] = []
@@ -322,5 +331,4 @@ class YuleeGems(commands.Cog):
 
 async def setup(bot):
     cog = YuleeGems(bot)
-    bot.add_listener(cog.on_message, 'on_message')
     await bot.add_cog(cog)
