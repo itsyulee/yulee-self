@@ -105,7 +105,7 @@ function update(forceLogs = false) {
             lineChart.data.datasets[0].data.shift();
             lineChart.update('none');
         }
-        try { renderQuests(d.quest_data, d.next_quest_timer); } catch(e) { console.error("Quest Render Error:", e); }
+        try { renderQuests(d.quest_data, d.next_quest_timer, d); } catch(e) { console.error("Quest Render Error:", e); }
         try { if (d.cmd_states) renderScheduler(d.cmd_states); } catch(e) { console.error("Scheduler Render Error in update():", e); }
         try { fetchSecuritySummary(); } catch(e) { console.error("Security Summary Error:", e); }
     });
@@ -168,25 +168,47 @@ function renderScheduler(states) {
     }
 }
 
-function renderQuests(quests, timer) {
+function renderQuests(quests, timer, data = {}) {
+    const escapeQuest = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const formatTimer = value => value && value.timestamp ? new Date(value.timestamp * 1000).toLocaleString() : (value || '');
+    const groups = [
+        ['Quests · o quest', quests || [], timer],
+        ['Daily checklist · o cl', data.daily_checklist_data || [], data.daily_checklist_timer],
+        ['Weekly checklist · o weekly', data.weekly_checklist_data || [], data.weekly_checklist_timer]
+    ];
+    quests = groups.flatMap(([group, rows, reset]) => rows.map(q => ({...q, group, reset})));
+    timer = formatTimer(timer);
     const list = document.getElementById('questList');
     const timerEl = document.getElementById('nextQuestTimer');
     if (!list || !timerEl) return;
     if (timer) {
-        timerEl.innerHTML = `<span class="icon-svg" style="--icon: url('/static/assets/yulee_icons/clock.svg'); width: 14px; height: 14px;"></span> Next quest in: ${timer}`;
+        timerEl.innerHTML = `<span class="icon-svg" style="--icon: url('/static/assets/yulee_icons/clock.svg'); width: 14px; height: 14px;"></span> Next quest: ${escapeQuest(timer)}`;
         timerEl.style.display = 'block';
     } else {
         timerEl.style.display = 'none';
     }
-    if (!quests || quests.length === 0) {
-        list.innerHTML = '<div style="color:#666; font-style:italic; text-align:center; padding: 20px;">No active quests tracked.<br><span style="font-size:0.8rem; opacity:0.7;">Run "o quest" to sync with OwO.</span></div>';
+    const imageSections = [['quest', 'Quests · o quest'], ['daily', 'Daily checklist · o cl'], ['weekly', 'Weekly checklist · o weekly']].map(([kind, label]) => {
+        const snapshot = (data.quest_images || {})[kind];
+        if (!snapshot || !Array.isArray(snapshot.urls)) return '';
+        const urls = snapshot.urls.filter(url => {
+            try { const u = new URL(url); return u.protocol === 'https:' && ['media.discordapp.net', 'cdn.discordapp.com'].includes(u.hostname); }
+            catch { return false; }
+        });
+        if (!urls.length) return '';
+        return `<section style="margin:12px 0"><div style="font-weight:600">${escapeQuest(label)}</div>
+            <small>OwO snapshot · ${escapeQuest(new Date(snapshot.updated_at * 1000).toLocaleString())}</small>
+            ${urls.map(url => `<img src="${escapeQuest(url)}" alt="${escapeQuest(label)}" referrerpolicy="no-referrer" style="display:block;max-width:100%;height:auto;margin:8px 0;border-radius:8px">`).join('')}
+            <small>Run this command again to refresh the image.</small></section>`;
+    }).join('');
+    if ((!quests || quests.length === 0) && !imageSections) {
+        list.innerHTML = '<div style="color:#666; font-style:italic; text-align:center; padding: 20px;">No active quests tracked.<br><span style="font-size:0.8rem; opacity:0.7;">Run "o quest", "o cl" or "o weekly" to sync with OwO.</span></div>';
         return;
     }
-    list.innerHTML = quests.map(q => {
+    list.innerHTML = quests.map((q, index) => {
         const percent = Math.min(100, Math.round((q.current / q.total) * 100));
         const isCompleted = q.completed;
         const color = isCompleted ? 'var(--success)' : 'var(--primary)';
-        let status = "Auto-solving";
+        let status = "Tracking";
         if (isCompleted) status = "Completed";
         else {
             const desc = q.description.toLowerCase();
@@ -199,10 +221,12 @@ function renderQuests(quests, timer) {
                 status = "Auto Gambling";
             }
         }
-        return `
+        const heading = index === 0 || quests[index - 1].group !== q.group
+            ? `<div style="margin-top:12px;font-weight:600">${escapeQuest(q.group)}${q.reset ? `<small style="display:block;font-weight:400">Reset: ${escapeQuest(formatTimer(q.reset))}</small>` : ''}</div>` : '';
+        return `${heading}
             <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); padding:15px; border-radius:8px;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:0.9rem;">
-                    <span style="color:#eee; font-weight:500;">${q.description}</span>
+                    <span style="color:#eee; font-weight:500;">${escapeQuest(q.description)}</span>
                     <span style="color:${color}; font-weight:bold;">${q.current}/${q.total}</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -213,7 +237,7 @@ function renderQuests(quests, timer) {
                 </div>
             </div>
         `;
-    }).join('');
+    }).join('') + imageSections;
 }
 
 function renderLogs(logs) {

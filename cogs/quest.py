@@ -25,11 +25,13 @@ import core.state as state
 from discord.ext import commands
 from yulee_engines.quest_engine import YuleeQuestEngine
 from component_v2_yulee import parse_v2_message
+from utils.quest_tracking import message_text, parse_tracking, belongs_to_user, tracking_images
 
 class Quest(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.active = True
+        self._tracking_messages = {}
         self.task = None
         self.engine = YuleeQuestEngine(self.bot)
 
@@ -52,7 +54,7 @@ class Quest(commands.Cog):
 
     @commands.Cog.listener()
     async def on_socket_raw_receive(self, msg):
-        if not self.active or self.bot.paused:
+        if not self.active:
             return
 
         if isinstance(msg, bytes):
@@ -67,126 +69,88 @@ class Quest(commands.Cog):
             return
 
         data = raw_data.get("d", {})
-        if str(data.get("author", {}).get("id")) != self.bot.owo_bot_id:
+        message_id = str(data.get("id", ""))
+        previous = self._tracking_messages.get(message_id, {})
+        data = {**previous, **data}
+        if str(data.get("author", {}).get("id")) != str(self.bot.owo_bot_id):
             return
-
-        components = parse_v2_message(data)
-        if not components:
+        text = message_text(data)
+        parsed = parse_tracking(text)
+        if parsed is None:
             return
+        configured_channel = str(data.get("channel_id")) in {str(c) for c in self.bot.channels}
+        if not configured_channel:
+            return
+        self._tracking_messages[message_id] = data
+        if len(self._tracking_messages) > 100:
+            del self._tracking_messages[next(iter(self._tracking_messages))]
+        names = [self.bot.user.name, self.bot.display_name, getattr(self.bot.user, 'global_name', None)] + list(getattr(self.bot, 'identifiers', []))
+        guild = self.bot.get_guild(int(data['guild_id'])) if data.get('guild_id') else None
+        member = guild.get_member(self.bot.user.id) if guild else None
+        if member:
+            names.append(member.display_name)
+        if not belongs_to_user(text, self.bot.user.id, names):
+            return
+        images = tracking_images(data)
+        if not parsed[1] and images:
+            kind, _, timer = parsed
+            key = {'quest': 'quest_data', 'daily': 'daily_checklist_data', 'weekly': 'weekly_checklist_data'}[kind]
+            self.bot.stats[key] = []
+            self.bot.stats.setdefault('quest_images', {})[kind] = {
+                'urls': images, 'updated_at': time.time(), 'message_id': message_id
+            }
+            self.bot.stats[{'quest': 'next_quest_timer', 'daily': 'daily_checklist_timer', 'weekly': 'weekly_checklist_timer'}[kind]] = timer
+            self.bot.log("SYS", f"Dashboard synced: {kind} image updated.")
+            return
+        self._sync_tracking(text)
+        if parsed[1]:
+            self.bot.stats.setdefault('quest_images', {}).pop(parsed[0], None)
+        if parsed[0] == 'quest' and not self.bot.paused:
+            self._parse_quests_v2(parse_v2_message(data), data)
 
-        v2_text = " ".join([c.content for c in components if c.name in ["text_display", "section"]]).lower()
-        content = (data.get("content") or "").lower()
-        full_text = f"{content} {v2_text}"
-
-        if "quest log" in full_text or "checklist" in full_text:
-            idents = [self.bot.user.name.lower(), self.bot.display_name.lower()] + [i.lower() for i in getattr(self.bot, 'identifiers', [])]
-            is_for_me = False
-            for ident in idents:
-                clean_ident = ident.replace("<@", "").replace(">", "").replace("!", "")
-                if clean_ident in full_text:
-                    is_for_me = True
-                    break
-
-            if not is_for_me:
-                return
-
-            self._parse_quests_v2(components, data)
+    def _sync_tracking(self, text):
+        parsed = parse_tracking(text)
+        if parsed is None:
+            return
+        kind, items, timer = parsed
+        # Do not erase a good snapshot when a loading/unknown layout has no rows.
+        if not items:
+            self.bot.log("WARN", f"QUEST SYNC: recognized {kind}, but found no text progress rows. Text: {text[:1500]!r}")
+            return
+        key = {'quest': 'quest_data', 'daily': 'daily_checklist_data', 'weekly': 'weekly_checklist_data'}[kind]
+        self.bot.stats[key] = items
+        self.bot.stats[{'quest': 'next_quest_timer', 'daily': 'daily_checklist_timer', 'weekly': 'weekly_checklist_timer'}[kind]] = timer
+        self.bot.log("SYS", f"Dashboard synced: {len(items)} {kind} tasks tracked.")
 
     def _parse_quests_v2(self, components, message_data):
-        text_lines = []
+        # Preserve auto-claim only for explicitly numbered claim button IDs.
+        # A generic Claim button may open a selector; never infer its target.
+        if not self.bot.config.get('commands', {}).get('quest', {}).get('auto_claim', True):
+            return
+        parsed = parse_tracking(message_text(message_data))
+        if not parsed or parsed[0] != 'quest':
+            return
+        slots = {}
+        for line in message_text(message_data).splitlines():
+            match = re.search(r'(?:^|\s)(\d+)\.\s*(.*)', line.replace('*', ''))
+            if match:
+                title = re.sub(r'<a?:\w+:\d+>', '', match.group(2))
+                title = re.sub(r'^[^\w]+', '', title).strip()
+                slots[title] = int(match.group(1))
+        completed_slots = {slots[q['description']] for q in parsed[1]
+                           if q['completed'] and q['description'] in slots}
         for comp in components:
-            if comp.name in ["text_display", "section"] and comp.content:
-                text_lines.extend([line.strip().lower() for line in comp.content.split('\n') if line.strip()])
-
-        quests = []
-        current_quest = None
-        claim_buttons = {}
-        for comp in components:
-            if comp.name == "button" and comp.custom_id:
-                cid = comp.custom_id.lower()
-                
-                match = re.search(r'claim.*?(\d+)', cid)
-                if match:
-                    slot_num = int(match.group(1))
-                    claim_buttons[slot_num] = comp.custom_id
-                elif "claim" in cid:
-                    pass
-
-        for i, line in enumerate(text_lines):
-            title_match = re.search(r'\b(\d+)\.\s*(.*)', line)
-            if title_match:
-                slot = int(title_match.group(1))
-                title = title_match.group(2)
-                desc = ""
-                if i + 1 < len(text_lines):
-                    desc = text_lines[i+1]
-
-                current_quest = {
-                    'slot': slot,
-                    'description': desc,
-                    'title': title,
-                    'current': 0,
-                    'total': 1,
-                    'completed': False
-                }
-                quests.append(current_quest)
-
-            elif "/" in line and current_quest:
-                progress_match = re.search(r'\b(\d+)/(\d+)\b', line)
-                if progress_match:
-                    current_quest['current'] = int(progress_match.group(1))
-                    current_quest['total'] = int(progress_match.group(2))
-                    current_quest['completed'] = current_quest['current'] >= current_quest['total']
-                    current_quest = None
-
-        st = self.bot.stats
-        old_quests = st.get('quest_data', [])
-        
-        cleaned_quests = []
-        for q in quests:
-            desc_text = q['description']
-            # description mapping
-            cleaned_quests.append({
-                'description': desc_text,
-                'current': q['current'],
-                'total': q['total'],
-                'completed': q['completed']
-            })
-
-            if q['completed']:
-                was_completed = any(oq.get('description', '').lower() == desc_text.lower() and oq.get('completed') for oq in old_quests)
-                if not was_completed:
-                    self.bot.log("SUCCESS", f"QUEST COMPLETED: {desc_text}")
-        
-        if cleaned_quests:
-            st['quest_data'] = cleaned_quests
-            self.bot.log("SYS", f"Dashboard synced: {len(cleaned_quests)} V2 quests tracked.")
-
-        #  global timer in v2 text lines
-        timer_pattern = r'next quest.*?\bin\s*(\d+\w+(?:\s*\d+\w+)*)'
-        for line in text_lines:
-            timer_match = re.search(timer_pattern, line)
-            if timer_match:
-                st['next_quest_timer'] = timer_match.group(1).upper()
-                break
-
-        cfg = self.bot.config.get('commands', {}).get('quest', {})
-        if cfg.get('auto_claim', True):
-            channel_id = int(message_data.get("channel_id"))
-            for q in quests:
-                if q['completed']:
-                    slot = q['slot']
-                    if slot in claim_buttons:
-                        custom_id = claim_buttons[slot]
-                        self.bot.log("SUCCESS", f"Quest Engine: Auto-claiming completed quest slot {slot}...")
-                        asyncio.create_task(self.bot.interactions.click_button_raw(
-                            custom_id=custom_id,
-                            message_id=message_data.get("id"),
-                            channel_id=channel_id,
-                            author_id=message_data.get("author", {}).get("id"),
-                            guild_id=message_data.get("guild_id"),
-                            flags=message_data.get("flags", 0)
-                        ))
+            if comp.name != 'button' or not comp.custom_id:
+                continue
+            match = re.search(r'claim.*?(\d+)', comp.custom_id.lower())
+            if match and int(match.group(1)) in completed_slots:
+                asyncio.create_task(self.bot.interactions.click_button_raw(
+                    custom_id=comp.custom_id,
+                    message_id=message_data.get('id'),
+                    channel_id=int(message_data['channel_id']),
+                    author_id=message_data['author']['id'],
+                    guild_id=message_data.get('guild_id'),
+                    flags=message_data.get('flags', 0)))
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -197,16 +161,14 @@ class Quest(commands.Cog):
             return
         if self.bot.owo_user is None:
             self.bot.owo_user = message.author
-        all_channels = [str(c) for c in self.bot.channels]
-        if str(message.channel.id) not in all_channels:
+        if str(message.channel.id) not in {str(c) for c in self.bot.channels}:
             return
-
         full_text = self.bot.get_full_content(message)
-        if ("quest log" in full_text or "checklist" in full_text) and not message.components:
+        if "quest log" in full_text or "checklist" in full_text:
             is_for_me = self.bot.is_message_for_me(message, role="header")
             if not is_for_me:
                 return
-            self._parse_quests_legacy(full_text)
+            self._sync_tracking(full_text)
 
     def _parse_quests_legacy(self, text):
         progress_pattern = r'progress:\s*\[(\d+)/(\d+)\]'

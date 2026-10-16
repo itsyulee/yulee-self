@@ -342,7 +342,7 @@ class YuleeBot(commands.Bot):
                         cmd = " ".join(parts)
 
         known = ['hunt', 'battle', 'curse', 'huntbot', 'daily', 'cookie',
-                'quest', 'checklist', 'cf', 'slots', 'bj', 'blackjack', 'autohunt', 'upgrade',
+                'quest', 'checklist', 'cl', 'weekly', 'cf', 'slots', 'bj', 'blackjack', 'autohunt', 'upgrade',
                 'sacrifice', 'team', 'zoo', 'use', 'inv', 'sell', 'crate',
                 'lootbox', 'run', 'pup', 'piku','pray']
         

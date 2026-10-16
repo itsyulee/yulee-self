@@ -206,6 +206,11 @@ def stats():
             'pending_commands': len(st.get('pending_commands', []))
         },
         'quest_data': st.get('quest_data', []),
+        'quest_images': st.get('quest_images', {}),
+        'daily_checklist_data': st.get('daily_checklist_data', []),
+        'daily_checklist_timer': st.get('daily_checklist_timer', None),
+        'weekly_checklist_data': st.get('weekly_checklist_data', []),
+        'weekly_checklist_timer': st.get('weekly_checklist_timer', None),
         'next_quest_timer': st.get('next_quest_timer'),
         'cmd_states': {k: {**v, 'content': '[Dynamic function]' if callable(v.get('content')) else v.get('content')} for k, v in bot.cmd_states.items()} if bot else {},
         'gambling_stats': st.get('gambling_stats', {})
