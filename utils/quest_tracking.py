@@ -58,6 +58,9 @@ def parse_tracking(text):
             candidate = None
         elif title and re.search(r'[a-zA-Z]', title):
             candidate = title
+    if kind == 'quest' and re.search(r"you finished all of your quests[! .]", text, re.I):
+        items = [dict(description='Đã hoàn thành tất cả quest — chờ quest mới.',
+                      current=1, total=1, completed=True)]
     return kind, items, timer
 
 

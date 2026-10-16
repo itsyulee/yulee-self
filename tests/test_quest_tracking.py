@@ -9,6 +9,17 @@ from utils.quest_tracking import message_text, parse_tracking, belongs_to_user, 
 
 
 class QuestTrackingTests(unittest.TestCase):
+    def test_finished_without_rows(self):
+        kind, rows, timer = parse_tracking(
+            "### <@123>'s Quest Log\nUwU You finished all of your quests! "
+            "Come back tomorrow! <3\n-# ⏰ Next quest: ****")
+        self.assertEqual(kind, 'quest')
+        self.assertTrue(rows[0]['completed'])
+        self.assertEqual(rows[0]['current'], rows[0]['total'])
+
+    def test_unknown_layout_is_not_completion(self):
+        self.assertEqual(parse_tracking("Quest Log\nLoading...")[1], [])
+
     def test_quest_title_is_description(self):
         kind, rows, timer = parse_tracking("<@123>'s Quest Log\nComplete quests to earn rewards!\nBalance: 85 Quest Seals\n**1. 🙏 Receive prayers**\n0/3\nCompletion rewards\n+100 +10\nNext quest: <t:1800000000:R>")
         self.assertEqual(kind, 'quest')
@@ -95,6 +106,24 @@ class TrackingIntegrationTests(unittest.TestCase):
         self.assertEqual(claims, [])
         event('MESSAGE_CREATE', id='4', channel_id='5', author={'id':'999'}, components=components('Quest Log', '3/3'))
         self.assertEqual(len(claims), 1)
+        event('MESSAGE_UPDATE', id='4', components=components(
+            'Quest Log', 'UwU You finished all of your quests! Come back tomorrow! <3'))
+        self.assertTrue(all(q['completed'] for q in cog.bot.stats['quest_data']))
+        claims.clear()
+        logs = []
+        cog.bot.log = lambda *args: logs.append(args)
+        cog.bot.stats['quest_images'] = {'quest': {'urls': ['old.png']}}
+        cog.bot.stats['force_lucky_gems'] = True
+        cog._sync_tracking("\n### 📜 <@711837366553411634>'s Quest Log\n"
+                           "-# Complete quests to earn rewards!\n"
+                           "-# Balance: **180** <:seal:1508740094125932614> Quest Seals\n"
+                           "UwU You finished all of your quests! Come back tomorrow! <3\n"
+                           "-# ⏰ Next quest: ****")
+        self.assertTrue(cog.bot.stats['quest_data'][0]['completed'])
+        self.assertNotIn('quest', cog.bot.stats['quest_images'])
+        self.assertFalse(cog.bot.stats['force_lucky_gems'])
+        self.assertIsNone(cog.bot.stats['next_quest_timer'])
+        self.assertFalse(any(level == 'WARN' for level, _ in logs))
 
         def gallery(owner, filename):
             return [{'type':17, 'components':[
@@ -110,7 +139,7 @@ class TrackingIntegrationTests(unittest.TestCase):
         self.assertTrue(cog.bot.stats['quest_images']['quest']['urls'][0].endswith('first.png'))
         event('MESSAGE_UPDATE', id='7', components=gallery(123, 'second'))
         self.assertTrue(cog.bot.stats['quest_images']['quest']['urls'][0].endswith('second.png'))
-        self.assertEqual(len(claims), 1)
+        self.assertEqual(len(claims), 0)
 
 
 if __name__ == '__main__':

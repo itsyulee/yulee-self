@@ -58,6 +58,7 @@ class YuleeQuestEngine:
         self._alt_warned = False
         self.last_signaled = {}
         self.last_queued = {}
+        self.last_progress_refresh = 0
 
     def start(self):
         if not self.solver_task:
@@ -70,6 +71,9 @@ class YuleeQuestEngine:
                 await asyncio.sleep(5)
                 continue
 
+            if not self.bot.config.get('commands', {}).get('quest', {}).get('enabled', True):
+                await asyncio.sleep(5)
+                continue
             now = time.time()
             if now - self.last_solver_run < 20: 
                 await asyncio.sleep(2)
@@ -78,6 +82,9 @@ class YuleeQuestEngine:
             self.last_solver_run = now
             st = self.bot.stats
             quests = st.get('quest_data', [])
+            if any(not q.get('completed', False) for q in quests) and now - self.last_progress_refresh >= 120:
+                await self.bot.yulee_enqueue("quest", priority=4)
+                self.last_progress_refresh = now
 
             has_rarity_quest = any(
                 "hunt 3 animals that are" in q.get('description', '')
@@ -101,7 +108,7 @@ class YuleeQuestEngine:
                 if self.is_alt_quest(desc):
                     now = time.time()
                     if now - self.last_signaled.get(desc, 0) < 60:
-                        break 
+                        continue
                     cfg = self.bot.config.get('commands', {}).get('quest', {})
                     if cfg.get('use_alt_account', True):
                         instances = getattr(state, 'bot_instances', [])
@@ -116,7 +123,7 @@ class YuleeQuestEngine:
                                     f"Quest: '{q.get('description', '')}'"
                                 )
                                 self._alt_warned = True
-                    break  
+                    continue
 
                 # priorty 2: self-contained quests we automate directly ──
 
@@ -139,11 +146,19 @@ class YuleeQuestEngine:
                     self.bot.log("SYS", "Quest Engine: Enabled Force Lucky Gems for rarity quest.")
 
                 elif "say 'owo'" in desc or "say \"owo\"" in desc:
-                    if remaining > 5:
+                    if remaining > 0:
                         await self._queue_quest_command("owo", "OWO Quest", cooldown=6)
                     break
 
-                # hunt / battle / xp quests are handled by the grinding loop.
+                elif any(word in desc for word in ('hunt', 'battle', 'xp')):
+                    # Reuse normal grinding where enabled; otherwise advance the quest.
+                    commands = ('hunt', 'battle') if 'xp' in desc else (
+                        ('hunt',) if 'hunt' in desc else ('battle',))
+                    for command in commands:
+                        if command not in self.bot.cmd_states:
+                            await self._queue_quest_command(
+                                f"owo {command}", "Quest progress", cooldown=20)
+                    break
 
 
             await asyncio.sleep(5)
@@ -164,6 +179,8 @@ class YuleeQuestEngine:
         return random.choice(FALLBACK_TARGETS)
 
     async def _queue_quest_command(self, cmd, reason, cooldown=10):
+        if cmd.startswith("owo "):
+            cmd = self.bot.prefix + cmd[4:]
         now = time.time()
         if now - self.last_queued.get(cmd, 0) < cooldown:
             return  
@@ -173,6 +190,7 @@ class YuleeQuestEngine:
 
     def is_alt_quest(self, desc):
         socials = [
+            "receive prayers", "receive curses", "receive cookies",
             "have a friend use an action command on you",
             "have a friend use an emote command on you",
             "have a friend pray to you",
@@ -186,14 +204,14 @@ class YuleeQuestEngine:
         my_id = self.bot.user_id
 
         target_cmd = None
-        if "pray to you" in desc:
+        if "pray to you" in desc or "receive prayers" in desc:
             target_cmd = f"owo pray <@{my_id}>"
-        elif "curse you" in desc:
+        elif "curse you" in desc or "receive curses" in desc:
             target_cmd = f"owo curse <@{my_id}>"
         elif "action command on you" in desc or "emote command on you" in desc:
             emote = random.choice(EMOTE_COMMANDS)
             target_cmd = f"owo {emote} <@{my_id}>"
-        elif "cookie from" in desc:
+        elif "cookie from" in desc or "receive cookies" in desc:
             target_cmd = f"owo cookie <@{my_id}>"
 
         for instance in getattr(state, 'bot_instances', []):

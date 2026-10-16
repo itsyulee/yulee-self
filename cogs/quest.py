@@ -41,6 +41,12 @@ class Quest(commands.Cog):
             self.bot.log("SYS", "Quest Module configured.")
             ih = cfg.get('interval_h', 6)
             await self.bot.yulee_register_command("quest", "quest", priority=self.bot.get_cmd_priority("quest", 4), delay=ih * 3600, initial_offset=10)
+            for command_id, content, offset in (
+                ('quest_daily', 'cl', 20), ('quest_weekly', 'weekly', 30)
+            ):
+                await self.bot.yulee_register_command(
+                    command_id, content, priority=self.bot.get_cmd_priority("quest", 4),
+                    delay=ih * 3600, initial_offset=offset)
             self.trigger_action()
             
             self.engine.start()
@@ -49,8 +55,9 @@ class Quest(commands.Cog):
         cfg = self.bot.config.get('commands', {}).get('quest', {})
         ih = cfg.get('interval_h', 6)
         
-        if 'quest' in self.bot.cmd_states:
-            self.bot.cmd_states['quest']['delay'] = ih * 3600
+        for command_id in ('quest', 'quest_daily', 'quest_weekly'):
+            if command_id in self.bot.cmd_states:
+                self.bot.cmd_states[command_id]['delay'] = ih * 3600
 
     @commands.Cog.listener()
     async def on_socket_raw_receive(self, msg):
@@ -109,6 +116,19 @@ class Quest(commands.Cog):
             self._parse_quests_v2(parse_v2_message(data), data)
 
     def _sync_tracking(self, text):
+        # OwO omits both the gallery and progress rows when all quests are done.
+        # Handle this terminal response before the normal progress parser.
+        if 'quest log' in text.lower() and 'you finished all of your quests' in text.lower():
+            parsed = parse_tracking(text)
+            self.bot.stats['quest_data'] = [
+                dict(description='Đã hoàn thành tất cả quest — chờ quest mới.',
+                     current=1, total=1, completed=True)
+            ]
+            self.bot.stats['next_quest_timer'] = (parsed[2] or None) if parsed else None
+            self.bot.stats.setdefault('quest_images', {}).pop('quest', None)
+            self.bot.stats['force_lucky_gems'] = False
+            self.bot.log("SUCCESS", "QUEST SYNC: Đã hoàn thành tất cả quest — chờ quest mới.")
+            return
         parsed = parse_tracking(text)
         if parsed is None:
             return

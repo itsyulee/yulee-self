@@ -462,6 +462,8 @@ class YuleeBot(commands.Bot):
             ("cursepray", enabled("curse") or enabled("pray")),
             ("daily", enabled("daily")),
             ("quest", enabled("quest")),
+            ("quest_daily", enabled("quest")),
+            ("quest_weekly", enabled("quest")),
             ("rpp", enabled("rpp")),
             ("cookie", enabled("cookie")),
             ("huntbot", enabled("huntbot")),
