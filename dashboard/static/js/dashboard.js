@@ -176,7 +176,11 @@ function renderQuests(quests, timer, data = {}) {
         ['Daily checklist · o cl', data.daily_checklist_data || [], data.daily_checklist_timer],
         ['Weekly checklist · o weekly', data.weekly_checklist_data || [], data.weekly_checklist_timer]
     ];
-    quests = groups.flatMap(([group, rows, reset]) => rows.map(q => ({...q, group, reset})));
+    const completedGroups = new Set(groups
+        .filter(([, rows]) => rows.length > 0 && rows.every(q => q.completed))
+        .map(([label]) => label));
+    quests = groups.flatMap(([group, rows, reset]) =>
+        rows.filter(q => !q.completed).map(q => ({...q, group, reset})));
     timer = formatTimer(timer);
     const list = document.getElementById('questList');
     const timerEl = document.getElementById('nextQuestTimer');
@@ -188,6 +192,7 @@ function renderQuests(quests, timer, data = {}) {
         timerEl.style.display = 'none';
     }
     const imageSections = [['quest', 'Quests · o quest'], ['daily', 'Daily checklist · o cl'], ['weekly', 'Weekly checklist · o weekly']].map(([kind, label]) => {
+        if (completedGroups.has(label)) return '';
         const snapshot = (data.quest_images || {})[kind];
         if (!snapshot || !Array.isArray(snapshot.urls)) return '';
         const urls = snapshot.urls.filter(url => {
@@ -201,6 +206,10 @@ function renderQuests(quests, timer, data = {}) {
             <small>Run this command again to refresh the image.</small></section>`;
     }).join('');
     if ((!quests || quests.length === 0) && !imageSections) {
+        if (completedGroups.size) {
+            list.innerHTML = '<div style="color:#888;text-align:center;padding:20px;">Đã ẩn các mục hoàn thành. Chờ nhiệm vụ mới.</div>';
+            return;
+        }
         list.innerHTML = '<div style="color:#666; font-style:italic; text-align:center; padding: 20px;">No active quests tracked.<br><span style="font-size:0.8rem; opacity:0.7;">Run "o quest", "o cl" or "o weekly" to sync with OwO.</span></div>';
         return;
     }

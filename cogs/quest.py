@@ -144,6 +144,8 @@ class Quest(commands.Cog):
             self.bot.stats.setdefault('quest_images', {}).pop(kind, None)
         key = {'quest': 'quest_data', 'daily': 'daily_checklist_data', 'weekly': 'weekly_checklist_data'}[kind]
         self.bot.stats[key] = items
+        if items and all(item.get('completed', False) for item in items):
+            self.bot.stats.setdefault('quest_images', {}).pop(kind, None)
         self.bot.stats[{'quest': 'next_quest_timer', 'daily': 'daily_checklist_timer', 'weekly': 'weekly_checklist_timer'}[kind]] = timer
         if items:
             self.bot.log("SYS", f"Dashboard synced: {len(items)} {kind} tasks tracked.")

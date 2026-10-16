@@ -61,6 +61,13 @@ def parse_tracking(text):
     if kind == 'quest' and re.search(r"you finished all of your quests[! .]", text, re.I):
         items = [dict(description='Đã hoàn thành tất cả quest — chờ quest mới.',
                       current=1, total=1, completed=True)]
+    clean = re.sub(r'[*~`]', '', text).lower()
+    if kind in ('daily', 'weekly') and not items and (
+        'rewards already claimed' in clean or 'you claimed your rewards' in clean
+        or re.search(r'(?:daily|weekly) checklist (?:is )?complete(?:d)?[! .\n]|all (?:tasks|quests) (?:are )?completed', clean)
+    ):
+        items = [dict(description='Đã hoàn thành checklist — chờ lượt mới.',
+                      current=1, total=1, completed=True)]
     return kind, items, timer
 
 

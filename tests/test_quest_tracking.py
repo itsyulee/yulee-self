@@ -17,6 +17,13 @@ class QuestTrackingTests(unittest.TestCase):
         self.assertTrue(rows[0]['completed'])
         self.assertEqual(rows[0]['current'], rows[0]['total'])
 
+    def test_finished_checklist_without_rows(self):
+        for header, status in [('Daily Checklist', 'Daily checklist completed!'),
+                               ('Weekly Checklist', 'Rewards already claimed')]:
+            _, rows, _ = parse_tracking(f"<@123>'s {header}\n{status}")
+            self.assertTrue(rows[0]['completed'])
+        self.assertEqual(parse_tracking("Daily Checklist\nComplete 6 tasks to earn your daily reward!")[1], [])
+
     def test_unknown_layout_is_not_completion(self):
         self.assertEqual(parse_tracking("Quest Log\nLoading...")[1], [])
 
