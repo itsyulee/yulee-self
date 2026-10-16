@@ -33,6 +33,7 @@ class Quest(commands.Cog):
         self.active = True
         self._tracking_messages = {}
         self.task = None
+        self._claim_attempts = {}
         self.engine = YuleeQuestEngine(self.bot)
 
     async def register_actions(self):
@@ -110,11 +111,13 @@ class Quest(commands.Cog):
             }
             self.bot.stats[{'quest': 'next_quest_timer', 'daily': 'daily_checklist_timer', 'weekly': 'weekly_checklist_timer'}[kind]] = timer
             self.bot.log("SYS", f"Dashboard synced: {kind} image updated.")
+            if not self.bot.paused and any(c.name == 'button' for c in parse_v2_message(data)):
+                self._parse_quests_v2(parse_v2_message(data), data)
             return
         self._sync_tracking(text)
         if parsed[1]:
             self.bot.stats.setdefault('quest_images', {}).pop(parsed[0], None)
-        if parsed[0] == 'quest' and not self.bot.paused:
+        if not self.bot.paused:
             self._parse_quests_v2(parse_v2_message(data), data)
 
     def _sync_tracking(self, text):
@@ -146,12 +149,12 @@ class Quest(commands.Cog):
             self.bot.log("SYS", f"Dashboard synced: {len(items)} {kind} tasks tracked.")
 
     def _parse_quests_v2(self, components, message_data):
-        # Preserve auto-claim only for explicitly numbered claim button IDs.
-        # A generic Claim button may open a selector; never infer its target.
+        # Only use actual enabled buttons on the verified owner's message.
+        # Generic Claim may open a selector; do not invent selector values.
         if not self.bot.config.get('commands', {}).get('quest', {}).get('auto_claim', True):
             return
         parsed = parse_tracking(message_text(message_data))
-        if not parsed or parsed[0] != 'quest':
+        if not parsed:
             return
         slots = {}
         for line in message_text(message_data).splitlines():
@@ -163,10 +166,21 @@ class Quest(commands.Cog):
         completed_slots = {slots[q['description']] for q in parsed[1]
                            if q['completed'] and q['description'] in slots}
         for comp in components:
-            if comp.name != 'button' or not comp.custom_id:
+            if comp.name != 'button' or not comp.custom_id or comp.disabled:
                 continue
             match = re.search(r'claim.*?(\d+)', comp.custom_id.lower())
-            if match and int(match.group(1)) in completed_slots:
+            label = re.sub(r'^[^a-z]+|[^a-z]+$', '', comp.label.casefold()).strip()
+            explicit_claim = label in {
+                'claim', 'claim reward', 'claim rewards', 'claim all', 'claim all rewards'
+            }
+            if explicit_claim or (match and int(match.group(1)) in completed_slots):
+                key = (str(message_data.get('id')), comp.custom_id)
+                now = time.time()
+                if now - self._claim_attempts.get(key, 0) < 60:
+                    continue
+                self._claim_attempts = {k: t for k, t in self._claim_attempts.items() if now - t < 300}
+                self._claim_attempts[key] = now
+                self.bot.log("SYS", f"Auto claim: attempting {parsed[0]} reward.")
                 asyncio.create_task(self.bot.interactions.click_button_raw(
                     custom_id=comp.custom_id,
                     message_id=message_data.get('id'),
