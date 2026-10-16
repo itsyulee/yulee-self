@@ -141,6 +141,26 @@ class TrackingIntegrationTests(unittest.TestCase):
         self.assertTrue(cog.bot.stats['quest_images']['quest']['urls'][0].endswith('second.png'))
         self.assertEqual(len(claims), 0)
 
+        # OwO replaces the gallery with a text-only response: discard old media.
+        logs.clear()
+        event('MESSAGE_UPDATE', id='7', components=[
+            {'type': 10, 'content': "<@123>'s Quest Log\nNo tasks available"}
+        ])
+        self.assertNotIn('quest', cog.bot.stats['quest_images'])
+        self.assertEqual(cog.bot.stats['quest_data'], [])
+        self.assertFalse(any(level == 'WARN' for level, _ in logs))
+
+        # Metadata-only updates must retain a gallery still on the message.
+        event('MESSAGE_CREATE', id='8', channel_id='5', author={'id':'999'},
+              components=gallery(123, 'retained'))
+        event('MESSAGE_UPDATE', id='8', edited_timestamp='2026-10-16T10:00:00Z')
+        self.assertTrue(cog.bot.stats['quest_images']['quest']['urls'][0].endswith('retained.png'))
+        event('MESSAGE_UPDATE', id='8', components=[
+            {'type': 10, 'content': "<@123>'s Quest Log\nUwU You finished all of your quests! Come back tomorrow! <3"}
+        ])
+        self.assertNotIn('quest', cog.bot.stats['quest_images'])
+        self.assertTrue(cog.bot.stats['quest_data'][0]['completed'])
+
 
 if __name__ == '__main__':
     unittest.main()

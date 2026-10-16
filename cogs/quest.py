@@ -99,6 +99,8 @@ class Quest(commands.Cog):
         if not belongs_to_user(text, self.bot.user.id, names):
             return
         images = tracking_images(data)
+        if not images:
+            self.bot.stats.setdefault('quest_images', {}).pop(parsed[0], None)
         if not parsed[1] and images:
             kind, _, timer = parsed
             key = {'quest': 'quest_data', 'daily': 'daily_checklist_data', 'weekly': 'weekly_checklist_data'}[kind]
@@ -133,14 +135,15 @@ class Quest(commands.Cog):
         if parsed is None:
             return
         kind, items, timer = parsed
-        # Do not erase a good snapshot when a loading/unknown layout has no rows.
+        # An empty text response is a valid empty snapshot, not a sync error.
+        # Never keep displaying an image from an earlier response.
         if not items:
-            self.bot.log("WARN", f"QUEST SYNC: recognized {kind}, but found no text progress rows. Text: {text[:1500]!r}")
-            return
+            self.bot.stats.setdefault('quest_images', {}).pop(kind, None)
         key = {'quest': 'quest_data', 'daily': 'daily_checklist_data', 'weekly': 'weekly_checklist_data'}[kind]
         self.bot.stats[key] = items
         self.bot.stats[{'quest': 'next_quest_timer', 'daily': 'daily_checklist_timer', 'weekly': 'weekly_checklist_timer'}[kind]] = timer
-        self.bot.log("SYS", f"Dashboard synced: {len(items)} {kind} tasks tracked.")
+        if items:
+            self.bot.log("SYS", f"Dashboard synced: {len(items)} {kind} tasks tracked.")
 
     def _parse_quests_v2(self, components, message_data):
         # Preserve auto-claim only for explicitly numbered claim button IDs.
@@ -188,7 +191,11 @@ class Quest(commands.Cog):
             is_for_me = self.bot.is_message_for_me(message, role="header")
             if not is_for_me:
                 return
-            self._sync_tracking(full_text)
+            # The raw listener owns image/empty snapshots; this text-only listener
+            # must not erase a gallery that it cannot see.
+            parsed = parse_tracking(full_text)
+            if parsed and parsed[1]:
+                self._sync_tracking(full_text)
 
     def _parse_quests_legacy(self, text):
         progress_pattern = r'progress:\s*\[(\d+)/(\d+)\]'

@@ -197,7 +197,7 @@ function renderQuests(quests, timer, data = {}) {
         if (!urls.length) return '';
         return `<section style="margin:12px 0"><div style="font-weight:600">${escapeQuest(label)}</div>
             <small>OwO snapshot · ${escapeQuest(new Date(snapshot.updated_at * 1000).toLocaleString())}</small>
-            ${urls.map(url => `<img src="${escapeQuest(url)}" alt="${escapeQuest(label)}" referrerpolicy="no-referrer" style="display:block;max-width:100%;height:auto;margin:8px 0;border-radius:8px">`).join('')}
+            ${urls.map(url => `<img src="${escapeQuest(url)}" alt="${escapeQuest(label)}" referrerpolicy="no-referrer" onerror="this.remove()" style="display:block;max-width:100%;height:auto;margin:8px 0;border-radius:8px">`).join('')}
             <small>Run this command again to refresh the image.</small></section>`;
     }).join('');
     if ((!quests || quests.length === 0) && !imageSections) {
