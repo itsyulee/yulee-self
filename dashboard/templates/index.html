@@ -92,6 +92,8 @@
                 <div class="mobile-sidebar-close" onclick="toggleMobileMenu()">&times;</div>
             </div>
             <nav class="nav-links">
+                <a class="nav-item" data-view="changelogs" onclick="nav('changelogs', this)"><span class="icon-svg"
+                        style="--icon: url('/static/assets/yulee_icons/list-check.svg');"></span> Changelogs</a>
                 <a class="nav-item active" data-view="accounts" onclick="nav('accounts', this)"><span class="icon-svg"
                         style="--icon: url('/static/assets/yulee_icons/users.svg');"></span> Accounts</a>
                 <a class="nav-item" data-view="dash" onclick="nav('dash', this)"><span class="icon-svg"
@@ -133,6 +135,14 @@
         </aside>
 
         <main class="content-area">
+            <!-- Changelogs Tab -->
+            <section id="changelogs" class="view" aria-labelledby="changelogs-title">
+                <h2 id="changelogs-title">Changelogs</h2>
+                <article style="margin-top:20px; background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:20px;">
+                    <h3 class="section-subtitle">Cập nhật auto quest + claim quest</h3>
+                </article>
+            </section>
+
             <!-- Setting: personal account and proxy management -->
             <section id="settings" class="view">
                 <div class="settings-tabbar" role="tablist" aria-label="Setting">
