@@ -254,7 +254,9 @@ def get_analytics():
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
         
-        dat = history_tracker.get_analytics_data(start_date=start_date, end_date=end_date)
+        page = request.args.get('page', default=1, type=int)
+        dat = history_tracker.get_analytics_data(
+            start_date=start_date, end_date=end_date, page=max(1, page))
         dat['recent_logs'] = list(state.full_session_history)[-500:]
         return jsonify(dat)
     except Exception as e:

@@ -20,6 +20,7 @@ YuleeSelf-UwU - https://github.com/itsyulee/yulee-self
 import os
 import io
 import asyncio
+import threading
 import aiohttp
 import numpy as np
 from PIL import Image
@@ -31,6 +32,10 @@ except ImportError:
 
 
 # Credit to Owo-Dusk for onnxmodel https://github.com/owo-dusk/owo-dusk/blob/main/utils/captcha_solver/best.onnx
+
+# Process-local cache: workers never share customer configuration or API keys.
+_MODEL_SESSIONS = {}
+_MODEL_LOCK = threading.Lock()
 
 
 class CaptchaSolver:
@@ -45,21 +50,27 @@ class CaptchaSolver:
         self.conf_threshold = 0.3
         self.img_size = 384
         
-        if onnxruntime:
-            self._load_model()
-        else:
+        if onnxruntime is None:
             self.bot.log("SYS", "onnxruntime not installed. AI Solver disabled.")
 
     def _load_model(self):
+        if self.onnx_session is not None or onnxruntime is None:
+            return
         if not os.path.exists(self.model_path):
             self.bot.log("ERROR", f"AI Model not found at {self.model_path}")
             return
 
         try:
-            self.onnx_session = onnxruntime.InferenceSession(
-                self.model_path,
-                providers=["CPUExecutionProvider"]
-            )
+            model_path = os.path.realpath(self.model_path)
+            with _MODEL_LOCK:
+                session = _MODEL_SESSIONS.get(model_path)
+                if session is None:
+                    session = onnxruntime.InferenceSession(
+                        model_path,
+                        providers=["CPUExecutionProvider"]
+                    )
+                    _MODEL_SESSIONS[model_path] = session
+                self.onnx_session = session
             self.bot.log("SYS", "AI Captcha Solver initialized.")
         except Exception as e:
             self.bot.log("ERROR", f"Failed to load AI model: {e}")
@@ -83,7 +94,9 @@ class CaptchaSolver:
         """
         downloads a captcha image from a url and predicts the letters.
         """
-        if not self.onnx_session:
+        if self.onnx_session is None:
+            self._load_model()
+        if self.onnx_session is None:
             return None
 
         try:

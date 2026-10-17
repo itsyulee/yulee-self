@@ -15,7 +15,13 @@
 
 */
 
-window.loadHistory = async function() {
+let historyRequestId = 0;
+let historyAbortController = null;
+
+window.loadHistory = async function(page = 1) {
+    const requestId = ++historyRequestId;
+    if (historyAbortController) historyAbortController.abort();
+    historyAbortController = new AbortController();
     console.log('loadHistory called');
     try {
         const startEl = document.getElementById('historyStartDate');
@@ -23,16 +29,20 @@ window.loadHistory = async function() {
         const start = startEl ? startEl.value : null;
         const end = endEl ? endEl.value : null;
         let url = '/api/history/analytics';
-        const params = new URLSearchParams();
+        const params = new URLSearchParams({page: String(page)});
         if (start) params.append('start_date', start);
         if (end) params.append('end_date', end);
         if (params.toString()) {
             url += '?' + params.toString();
         }
         console.log("Fetching from:", url);
-        const res = await fetch(url);
+        const res = await fetch(url, {signal: historyAbortController.signal});
+        if (!res.ok) throw new Error("Không tải được lịch sử");
         console.log("Response status:", res.status);
-        globalAnalyticsData = await res.json();
+        const data = await res.json();
+        if (requestId !== historyRequestId) return;
+        globalAnalyticsData = data;
+        window.renderHistoryPagination();
         console.log("Global analytics data:", globalAnalyticsData);
         
         const totals = globalAnalyticsData.totals || {};
@@ -50,22 +60,58 @@ window.loadHistory = async function() {
         window.populateSessionDropdown();
 
         setTimeout(() => {
+            if (requestId !== historyRequestId) return;
             console.log('Forced renderCharts after delay');
             renderCharts();
         }, 100);
     } catch (e) {
+        if (e.name === 'AbortError' || requestId !== historyRequestId) return;
         console.error("History Error:", e);
+        if (typeof showToast === 'function') showToast('Không tải được lịch sử. Hãy thử lại.', 'error');
     }
+};
+
+window.renderHistoryPagination = function() {
+    const dropdown = document.getElementById('session-select');
+    if (!dropdown) return;
+    let pager = document.getElementById('history-pagination');
+    if (!pager) {
+        pager = document.createElement('div');
+        pager.id = 'history-pagination';
+        pager.style.cssText = 'display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:12px 0';
+        dropdown.parentElement.insertAdjacentElement('afterend', pager);
+    }
+    const p = globalAnalyticsData.pagination;
+    if (!p) return;
+    pager.replaceChildren();
+    const previous = document.createElement('button');
+    previous.className = 'btn-control input-dark';
+    previous.textContent = '← Trang trước';
+    previous.disabled = p.page <= 1;
+    previous.onclick = () => window.loadHistory(p.page - 1);
+    const label = document.createElement('span');
+    label.textContent = `Trang ${p.page}/${p.total_pages} · ${p.total_items} phiên · 50 phiên/trang`;
+    label.setAttribute('aria-live', 'polite');
+    const next = document.createElement('button');
+    next.className = 'btn-control input-dark';
+    next.textContent = 'Trang sau →';
+    next.disabled = p.page >= p.total_pages;
+    next.onclick = () => window.loadHistory(p.page + 1);
+    const note = document.createElement('small');
+    note.style.flexBasis = '100%';
+    note.textContent = 'Biểu đồ cột: các phiên trên trang này. Biểu đồ tròn: toàn bộ khoảng ngày khi chưa chọn một phiên. Thống kê tổng: toàn bộ lịch sử.';
+    pager.append(previous, label, next, note);
 };
 
 window.populateSessionDropdown = function() {
     const dropdown = document.getElementById('session-select');
-    if (!dropdown || !globalAnalyticsData || !globalAnalyticsData.sessions) {
-        dropdown.innerHTML = '<option value="all">ALL SESSIONS IN RANGE</option>';
+    if (!dropdown) return;
+    if (!globalAnalyticsData || !globalAnalyticsData.sessions) {
+        dropdown.innerHTML = '<option value="all">TẤT CẢ — CỘT: TRANG NÀY / TRÒN: KHOẢNG NGÀY</option>';
         return;
     }
     const currentVal = dropdown.value;
-    let html = '<option value="all">ALL SESSIONS IN RANGE</option>';
+    let html = '<option value="all">TẤT CẢ — CỘT: TRANG NÀY / TRÒN: KHOẢNG NGÀY</option>';
     globalAnalyticsData.sessions.forEach(s => {
         const d = s.start_time ? new Date(s.start_time * 1000).toLocaleString() : `Session ${s.id}`;
         html += `<option value="${s.id}">Session ${s.id} — ${d}</option>`;
@@ -239,6 +285,14 @@ window.renderCharts = function renderCharts() {
             totalCaptchas += s.stats?.captchas || 0;
             totalOther += Math.max(0, (s.stats?.commands || 0) - (s.stats?.hunts || 0) - (s.stats?.battles || 0) - (s.stats?.captchas || 0));
         });
+        const selected = document.getElementById('session-select')?.value || 'all';
+        if (selected === 'all' && globalAnalyticsData.range_totals) {
+            const totals = globalAnalyticsData.range_totals;
+            totalHunts = totals.hunts;
+            totalBattles = totals.battles;
+            totalCaptchas = totals.captchas;
+            totalOther = totals.other;
+        }
         const total = totalHunts + totalBattles + totalCaptchas + totalOther;
         console.log(' Pie chart totals:', { totalHunts, totalBattles, totalCaptchas, totalOther, total });
         

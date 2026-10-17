@@ -9,6 +9,33 @@ import threading
 import time
 
 import requests
+import logging
+from logging.handlers import RotatingFileHandler
+
+
+def collect_worker_logs(pipe, log_path):
+    handler = None
+    try:
+        handler = RotatingFileHandler(
+            log_path, maxBytes=10 * 1024 * 1024,
+            backupCount=2, encoding='utf-8',
+        )
+        handler.setFormatter(logging.Formatter('%(message)s'))
+        # Bound reads even if a worker emits a very long line.
+        while True:
+            line = pipe.readline(16384)
+            if not line:
+                break
+            record = logging.LogRecord(
+                'worker', logging.INFO, '', 0,
+                line.rstrip('\r\n'), (), None,
+            )
+            handler.handle(record)
+    finally:
+        pipe.close()
+        if handler is not None:
+            handler.close()
+
 
 
 class WorkerManager:
@@ -57,15 +84,22 @@ class WorkerManager:
             secret = secrets.token_urlsafe(48)
             env = dict(os.environ, YULEESELF_TENANT_DIR=str(directory),
                        YULEESELF_WORKER_SECRET=secret, PYTHONUNBUFFERED='1')
-            log = open(directory / 'data/worker.log', 'ab')
-            try:
-                process = subprocess.Popen(
-                    [sys.executable, str(self.store.source / 'service/worker.py')],
-                    cwd=directory, env=env, stdout=log, stderr=log,
-                )
-            finally:
-                log.close()
-            worker = {'process': process, 'secret': secret, 'port': None}
+            process = subprocess.Popen(
+                [sys.executable, str(self.store.source / 'service/worker.py')],
+                cwd=directory, env=env,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                text=True, encoding='utf-8', errors='replace', bufsize=1,
+            )
+            log_thread = threading.Thread(
+                target=collect_worker_logs,
+                args=(process.stdout, directory / 'data/worker.log'),
+                daemon=True,
+            )
+            log_thread.start()
+            worker = {
+                'process': process, 'secret': secret, 'port': None,
+                'last_request': time.monotonic(), 'log_thread': log_thread,
+            }
             self.workers[uid] = worker
             deadline = time.monotonic() + 15
             while time.monotonic() < deadline:
@@ -86,6 +120,7 @@ class WorkerManager:
     def request(self, uid, method, path, query=b'', payload=None):
         with self.user_lock(uid):
             worker = self.ensure(uid)
+            worker['last_request'] = time.monotonic()
             # URL and headers are constructed here, never supplied by the browser.
             url = f"http://127.0.0.1:{worker['port']}/{path}"
             client = requests.Session()
@@ -104,6 +139,7 @@ class WorkerManager:
                 return
             process = worker['process']
             if process.poll() is not None:
+                worker['log_thread'].join(timeout=5)
                 return
             if worker.get('port'):
                 client = requests.Session()
@@ -124,6 +160,7 @@ class WorkerManager:
                 except subprocess.TimeoutExpired:
                     process.kill()
                     process.wait()
+            worker['log_thread'].join(timeout=5)
 
     def close(self):
         self.closing = True
@@ -142,8 +179,14 @@ class WorkerManager:
                 try:
                     path = self.store.directory(user['id']) / 'config/accounts.json'
                     accounts = json.loads(path.read_text()).get('accounts', []) if path.exists() else []
+                    uid = user['id']
                     if any(a.get('enabled', True) for a in accounts):
-                        self.ensure(user['id'])
+                        self.ensure(uid)
+                    else:
+                        with self.user_lock(uid):
+                            worker = self.workers.get(uid)
+                            if worker and time.monotonic() - worker['last_request'] >= 300:
+                                self.stop(uid)
                 except (RuntimeError, ValueError, OSError):
                     pass
             for uid, worker in list(self.workers.items()):

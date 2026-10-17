@@ -215,23 +215,33 @@ def get_all_time_stats(history_data=None):
         "total_sessions": 0
     }
 
-def get_analytics_data(start_date=None, end_date=None):
+def get_analytics_data(start_date=None, end_date=None, page=1):
     conn = get_db()
     c = conn.cursor()
     
-    query = 'SELECT id, date, start_time, end_time, hunts, battles, commands, captchas FROM sessions'
-    params = []
-    
-    if start_date and end_date:
-        query += ' WHERE date >= ? AND date <= ?'
-        params.extend([start_date, end_date])
-    elif start_date:
-        query += ' WHERE date >= ?'
+    page_size = 50
+    page = max(1, int(page))
+    conditions, params = [], []
+    if start_date:
+        conditions.append('date >= ?')
         params.append(start_date)
-        
-    query += ' ORDER BY id ASC'
-    
-    c.execute(query, params)
+    if end_date:
+        conditions.append('date <= ?')
+        params.append(end_date)
+    where = ' WHERE ' + ' AND '.join(conditions) if conditions else ''
+    c.execute('SELECT COUNT(*), COALESCE(SUM(hunts), 0), '
+              'COALESCE(SUM(battles), 0), COALESCE(SUM(commands), 0), '
+              'COALESCE(SUM(captchas), 0), '
+              'COALESCE(SUM(MAX(0, commands-hunts-battles-captchas)), 0) '
+              'FROM sessions' + where, params)
+    count, hunts, battles, commands, captchas, other = c.fetchone()
+    total_pages = max(1, (count + page_size - 1) // page_size)
+    page = min(page, total_pages)
+    range_totals = dict(hunts=hunts, battles=battles, commands=commands,
+                        captchas=captchas, other=other)
+    c.execute('SELECT id, date, start_time, end_time, hunts, battles, commands, captchas '
+              'FROM sessions' + where + ' ORDER BY id DESC LIMIT ? OFFSET ?',
+              params + [page_size, (page - 1) * page_size])
     sessions = []
     for row in c.fetchall():
         sess_id, date_str, start_str, end_str, hunts, battles, commands, captchas = row
@@ -277,5 +287,8 @@ def get_analytics_data(start_date=None, end_date=None):
     return {
         "sessions": sessions,
         "cash_history": cash_history,
-        "totals": totals
+        "totals": totals,
+        "range_totals": range_totals,
+        "pagination": {"page": page, "page_size": page_size,
+                       "total_items": count, "total_pages": total_pages}
     }

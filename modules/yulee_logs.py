@@ -44,8 +44,15 @@ class YuleeLogs:
         now = time.time()
         bot_uid = bot.user.id if (hasattr(bot, '_connection') and bot.user) else (getattr(bot, 'user_id', 'initialization'))
         dedup_key = f"{bot_uid}:{log_type}:{message}"
+        expired_keys = [key for key, timestamp in self.last_logs.items()
+                        if now - timestamp >= 2.0]
+        for key in expired_keys:
+            del self.last_logs[key]
         if now - self.last_logs.get(dedup_key, 0) < 1.0:
             return
+        if dedup_key not in self.last_logs and len(self.last_logs) >= 1000:
+            oldest_key = min(self.last_logs, key=self.last_logs.get)
+            del self.last_logs[oldest_key]
         self.last_logs[dedup_key] = now
 
         type_colors = self.log_config.get("colors", {})
