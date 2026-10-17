@@ -59,6 +59,7 @@ function buildConfigCategories(cfg) {
 function renderSettings(cfg) {
     const cats = buildConfigCategories(cfg);
     if (!cats.length) {
+        setConfigChannelsVisible(false);
         document.getElementById('settings-grid').innerHTML = '<div class="cfg-empty">No settings loaded.</div>';
         return;
     }
@@ -119,11 +120,17 @@ window.filterConfigSearch = function (query) {
     }
 };
 
+function setConfigChannelsVisible(visible) {
+    const panel = document.getElementById('config-channels-panel');
+    if (panel) panel.style.display = visible ? '' : 'none';
+}
+
 function renderConfigPanel(cfg) {
     const grid = document.getElementById('settings-grid');
     const titles = document.getElementById('config-panel-titles');
     const cats = buildConfigCategories(cfg);
     const cat = cats.find(c => c.id === activeConfigCategory) || cats[0];
+    setConfigChannelsVisible(cat?.id === 'cat-core');
     if (!cat) return;
     if (titles) {
         titles.innerHTML = `<h2>${cat.name}</h2><p>${cat.hint}</p>`;
@@ -155,6 +162,7 @@ function searchMatchScore(cat, query) {
 }
 
 function renderConfigSearchResults(cfg, query) {
+    setConfigChannelsVisible(false);
     const grid = document.getElementById('settings-grid');
     const cats = buildConfigCategories(cfg);
     const matching = cats.filter(cat => categoryMatchesSearch(cat, query));
@@ -382,7 +390,9 @@ function renderField(path, f, v, highlight = false, parentEnabled = true) {
     if (path === 'commands.shop.itemsToBuy') {
         return renderRingSelection(path, v, parentEnabled);
     }
-    const label = formatCfgLabel(f.l);
+    const label = path === 'core.monitor_bot_id'
+        ? '⚠️ Monitor Bot Id (Cấm sửa nếu không biết mình đang làm gì)'
+        : formatCfgLabel(f.l);
     const hl = highlight ? ' cfg-row-highlight' : '';
     const locked = !parentEnabled && !f.master ? ' cfg-row-disabled' : '';
     const search = cfgSearchBlob(path, label, '', []);

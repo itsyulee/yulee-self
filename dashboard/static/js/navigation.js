@@ -25,6 +25,12 @@ window.nav = function(id, el) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     target.classList.add('active-view');
     item.classList.add('active');
+    if (id === 'logs') {
+        requestAnimationFrame(() => {
+            const terminal = document.getElementById('term');
+            if (terminal) terminal.scrollTop = terminal.scrollHeight;
+        });
+    }
     try { sessionStorage.setItem('yulee:active-view', id); } catch (_) {}
 
     if (typeof checkDirty === 'function') checkDirty();

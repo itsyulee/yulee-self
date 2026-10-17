@@ -255,14 +255,13 @@ function renderLogs(logs) {
     const currentHash = JSON.stringify([currentAccountId, logs]);
     if (currentHash === lastLogsHash) return;
     lastLogsHash = currentHash;
-    const follow = !t.children.length || t.scrollHeight - t.scrollTop - t.clientHeight < 48;
     t.innerHTML = [...logs].reverse().map(l => {
         const tagClass = l.type ? `tag-${l.type.toLowerCase()}` : '';
         const localTime = l.timestamp ? timeFormatter.format(new Date(l.timestamp * 1000)) : l.time;
         const botTag = l.bot_name ? `<span style="color:magenta; margin-right:5px;">[${l.bot_name}]</span>` : '';
         return `<div class="history-item ${l.type ? l.type.toLowerCase() : ''}">${botTag}<span class="history-time">[${localTime}]</span> <span class="history-tag ${tagClass}">${l.type}</span> <span class="history-msg">${l.message}</span></div>`;
     }).join('');
-    if (follow) t.scrollTop = t.scrollHeight;
+    requestAnimationFrame(() => { t.scrollTop = t.scrollHeight; });
 }
 
 window.reloadLogs = async function(button) {
