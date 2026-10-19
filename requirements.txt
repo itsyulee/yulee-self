@@ -1,7 +1,7 @@
 discord.py-self @ git+https://github.com/dolfies/discord.py-self@20ae80b398ec83fa272f0a96812140e14868c88
 Flask==2.3.0
 requests==2.31.0
-aiohttp==3.12.15
+aiohttp==3.14.5
 rich==14.2.0
 plyer==2.1.0
 playsound3==3.3.0
@@ -10,3 +10,6 @@ aiohttp-socks==0.10.1
 nopecha
 waitress==3.0.2
 Werkzeug==2.3.8
+numpy==2.5.4
+Pillow==13.0.0
+onnxruntime==1.31.0
