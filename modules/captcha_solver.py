@@ -81,7 +81,7 @@ class CaptchaSolver:
         w, h = img.size
         scale = min(new_size / w, new_size / h)
         nw, nh = int(w * scale), int(h * scale)
-        img_resized = img.resize((nw, nh), Image.BILINEAR)
+        img_resized = img.resize((nw, nh), Image.Resampling.BILINEAR)
         
         new_img = Image.new("RGB", (new_size, new_size), color)
         paste_x = (new_size - nw) // 2
@@ -110,6 +110,17 @@ class CaptchaSolver:
                     img_array = np.array(img)
         except Exception as e:
             self.bot.log("ERROR", f"Failed to download captcha image: {e}")
+            return None
+
+        return self.predict_image(img_array, letter_count)
+
+    def predict_image(self, img_array, letter_count=5):
+        """Predict an RGB image array using the same pipeline as URL challenges."""
+        if not 1 <= letter_count <= 26:
+            raise ValueError("letter_count must be between 1 and 26")
+        if self.onnx_session is None:
+            self._load_model()
+        if self.onnx_session is None:
             return None
 
         img = self._letterbox(img_array, self.img_size)

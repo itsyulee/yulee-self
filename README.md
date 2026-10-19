@@ -17,7 +17,7 @@
   <br/>
 
   <img src="https://img.shields.io/badge/YULEESELF-Advanced_Automation-red?style=for-the-badge&logo=discord&logoColor=white" />
-  <img src="https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python&logoColor=white" />
+  <img src="https://img.shields.io/badge/Python-3.12+-blue?style=for-the-badge&logo=python&logoColor=white" />
   <img src="https://img.shields.io/badge/License-Private-green?style=for-the-badge" />
   <img src="https://img.shields.io/badge/Status-Active-success?style=for-the-badge" />
   
@@ -69,7 +69,7 @@ Instead of sending just gambling commands, it has strategies (martingale ,flat) 
 
 ## Multi-user dashboard
 
-See [Hướng dẫn nâng cấp và sử dụng](HUONG_DAN_MULTIUSER.md).
+Run `python setup.py`, then configure accounts through the dashboard.
 
 - Admin manually creates, disables and extends customer logins from the dashboard.
 - Each login has private Discord accounts, proxies, settings and history.
@@ -81,13 +81,13 @@ See [Hướng dẫn nâng cấp và sử dụng](HUONG_DAN_MULTIUSER.md).
 ### Windows
 
 ```bash
-curl -o "%TEMP%\install_yuleeself.bat" https://raw.githubusercontent.com/itsyulee/yulee-self/main/install_yuleeself.bat && "%TEMP%\install_yuleeself.bat"
+python setup.py
 ```
 
 ### Termux / Linux / MacOS
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/itsyulee/yulee-self/main/install_yuleeself.sh)
+bash install_yuleeself.sh
 ```
 
 #### For Termux

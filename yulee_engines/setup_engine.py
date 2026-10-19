@@ -50,7 +50,7 @@ except ImportError:
 console = Console()
 SETUP_LOG = os.path.join(state.DATA_DIR, "setup.log")
 DEFAULT_PASSWORD = "yuleeself_default_password_change_me"
-REQUIRED_VERSION_SUFFIX = "+g20ae80b3"
+DISCORD_SELF_REQUIREMENT = "discord.py-self==2.1.0"
 
 class YuleeSetupEngine:
     def __init__(self):
@@ -82,9 +82,9 @@ class YuleeSetupEngine:
 
     def check_python(self):
         major, minor = sys.version_info[:2]
-        if major < 3 or (major == 3 and minor < 10):
-            self._console_log("error", f"python 3.10+ required (found {major}.{minor})")
-            console.print("\n[bold]Please install Python 3.10 or newer:[/bold]")
+        if major < 3 or (major == 3 and minor < 12):
+            self._console_log("error", f"python 3.12+ required (found {major}.{minor})")
+            console.print("\n[bold]Please install Python 3.12 or newer:[/bold]")
             console.print("  - Windows: https://www.python.org/downloads/  (ensure 'Add Python to PATH' is checked)")
             console.print("  - macOS:   brew install python@3.11")
             console.print("  - Linux:   sudo apt install python3.11  (or use your package manager)")
@@ -206,12 +206,12 @@ class YuleeSetupEngine:
                 continue
         for line in content.splitlines():
             line = line.strip().replace("\x00", "")
-            if line and not line.startswith("#"):
-                pkg = line.split("@")[0].split("==")[0].strip()
+            if line and not line.startswith(("#", "-")):
+                pkg = re.split(r"[<>=!~;\[\s@]", line, maxsplit=1)[0]
                 needed.append((pkg, line))
         heavy = [("numpy", "numpy"), ("pillow", "pillow"), ("onnxruntime", "onnxruntime")]
         for p, full in heavy:
-            if not any(p == x[0] for x in needed):
+            if not any(p == x[0].lower() for x in needed):
                 needed.append((p, full))
         return needed
 
@@ -225,7 +225,7 @@ class YuleeSetupEngine:
     def _discord_self_ok(self):
         try:
             ver = version("discord.py-self")
-            return ver.endswith(REQUIRED_VERSION_SUFFIX)
+            return ver == DISCORD_SELF_REQUIREMENT.split("==", 1)[1]
         except PackageNotFoundError:
             return False
 
@@ -265,7 +265,7 @@ class YuleeSetupEngine:
             "-m",
             "pip",
             "install",
-            "git+https://github.com/dolfies/discord.py-self@20ae80b398ec83fa272f0a96812140e14868c88",
+            DISCORD_SELF_REQUIREMENT,
             "--force-reinstall",
             "--no-cache-dir",
         ]
@@ -286,6 +286,12 @@ class YuleeSetupEngine:
 
         for name, full in needed:
             import_ok = self._package_import_ok(name)
+            if "==" in full:
+                try:
+                    if version(name) != full.split("==", 1)[1].strip():
+                        import_ok = False
+                except PackageNotFoundError:
+                    import_ok = False
             if import_ok is True:
                 self._console_log("ok", f"{name} found")
                 continue
@@ -332,7 +338,7 @@ class YuleeSetupEngine:
                             self._console_log("warn", f"{name} not found in pkg, falling back to pip")
                     # pip fallback
                     self._console_log("info", f"installing {name} with pip...")
-                    result = subprocess.run([py_bin, "-m", "pip", "install", full, "--no-cache-dir"], capture_output=True, text=True)
+                    result = subprocess.run([py_bin, "-m", "pip", "install", full, "--no-cache-dir", "--only-binary=numpy,onnxruntime,Pillow,aiohttp"], capture_output=True, text=True)
                     if result.returncode == 0:
                         installed_ok = True
                         self._console_log("ok", f"{name} installed via pip")
@@ -376,9 +382,6 @@ class YuleeSetupEngine:
         self._write_log("INFO", "setup started")
         self._console_log("info", "running full setup...")
         if not self.check_python():
-            return False
-        if not self.check_git():
-            self._console_log("error", "git is required – please install it manually if auto-install failed")
             return False
         self.ensure_directories()
         self.ensure_config_files()

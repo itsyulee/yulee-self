@@ -36,8 +36,8 @@ def test_process_isolation_accounts_proxies_settings_history(system):
     b, bh = login(app, 'bob', 'bob-password')
     admin_client, _ = login(app, 'admin', 'admin-password')
     assert a.get('/').status_code == 200
-    assert 'Quản lý người dùng'.encode() not in a.get('/').data
-    assert 'Quản lý người dùng'.encode() in admin_client.get('/').data
+    assert 'Quản lý quyền sử dụng'.encode() not in a.get('/').data
+    assert 'Quản lý quyền sử dụng'.encode() in admin_client.get('/').data
     assert a.get('/api/accounts/config').json == {'accounts': []}
     assert b.get('/api/accounts/config').json == {'accounts': []}
     imported = a.post('/api/proxies/bulk', headers=ah, json={'text': 'socks5://proxy.example:1080'})

@@ -1,21 +1,21 @@
 {
     "owo": 1,
-    "hunt": 2,
-    "battle": 2,
+    "hunt": 3,
+    "battle": 3,
 
-    "coinflip": 2,
-    "slots": 2,
-    "blackjack": 2,
+    "coinflip": 3,
+    "slots": 3,
+    "blackjack": 3,
     
-    "cursepray": 2,
-    "daily": 4,
-    "cookie": 3,
-    "quest": 4,
-    "huntbot": 3,
-    "level_quotes": 4,
+    "cursepray": 3,
+    "daily": 5,
+    "cookie": 5,
+    "quest": 5,
+    "huntbot": 5,
+    "level_quotes": 5,
     "channelswitch": 6,
-    "shop_buy": 2,
-    "shop_cash_sync": 2,
-    "sell": 3,
-    "sacrifice": 3
+    "shop_buy": 3,
+    "shop_cash_sync": 3,
+    "sell": 4,
+    "sacrifice": 5
 }

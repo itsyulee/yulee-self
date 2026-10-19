@@ -19,6 +19,57 @@ import argparse
 import os
 from pathlib import Path
 import traceback
+import subprocess
+import sys
+import venv
+from importlib.metadata import PackageNotFoundError, version
+
+
+def requirements_ready(path):
+    """Check installed versions without importing NumPy or any application code."""
+    for line in path.read_text(encoding='utf-8').splitlines():
+        line = line.strip()
+        if not line or line.startswith(('#', '-')):
+            continue
+        name, expected = line.split('==', 1)
+        try:
+            if version(name.strip()) != expected.strip():
+                return False
+        except PackageNotFoundError:
+            return False
+    return True
+
+
+def prepare_runtime(root, repair=False):
+    """Always run setup and the dashboard in this project's isolated environment."""
+    if sys.version_info < (3, 12):
+        raise RuntimeError('Python 3.12 or newer is required; Python 3.14 is supported.')
+    environment = root / '.venv'
+    executable = environment / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
+    in_environment = Path(sys.prefix).resolve() == environment.resolve()
+    if not in_environment or not sys.flags.no_user_site:
+        if not executable.is_file():
+            print('[YULEESELF] Preparing runtime...', flush=True)
+            venv.EnvBuilder(with_pip=True).create(environment)
+        env = os.environ.copy()
+        env['PYTHONNOUSERSITE'] = '1'
+        env.pop('PYTHONPATH', None)
+        return subprocess.call([str(executable), '-s', str(root / 'setup.py'), *sys.argv[1:]],
+                               cwd=root, env=env)
+
+    requirements = root / 'requirements.txt'
+    if repair or not requirements_ready(requirements):
+        print('[YULEESELF] Installing requirements.txt...', flush=True)
+        subprocess.run([sys.executable, '-m', 'ensurepip', '--upgrade'], check=True)
+        subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip',
+                        '--index-url', 'https://pypi.org/simple'], check=True)
+        command = [sys.executable, '-m', 'pip', 'install', '--upgrade', '--no-cache-dir',
+                   '--index-url', 'https://pypi.org/simple', '-r', str(requirements)]
+        if repair:
+            command.append('--force-reinstall')
+        subprocess.run(command, check=True)
+        subprocess.run([sys.executable, '-m', 'pip', 'check'], check=True)
+    return None
 
 
 def main():
@@ -29,8 +80,11 @@ def main():
     parser.add_argument('--repair', action='store_true', help='Repair installed dependencies')
     args = parser.parse_args()
 
-    print('[YULEESELF] Starting setup...', flush=True)
     try:
+        result = prepare_runtime(Path(__file__).resolve().parent, repair=args.repair)
+        if result is not None:
+            return result
+        print('[YULEESELF] Starting setup...', flush=True)
         from yulee_engines.setup_engine import YuleeSetupEngine
         engine = YuleeSetupEngine()
         if not engine.run_full_setup(force_bootstrap=args.repair):
