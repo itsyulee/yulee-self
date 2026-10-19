@@ -139,6 +139,9 @@ class CaptchaSolver:
         detections.sort(key=lambda d: d["cx"])
         
         result = "".join(d["char"] for d in detections)
+        if len(result) != letter_count:
+            self.bot.log("ERROR", f"AI detected {len(result)} letters; expected {letter_count}.")
+            return None
         self.bot.log("SECURITY", f"AI Solver Predicted: {result}")
         return result
 

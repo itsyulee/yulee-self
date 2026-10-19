@@ -176,6 +176,49 @@ class Security(commands.Cog):
                     return url
         return None
 
+    def _image_letter_count(self, text):
+        # Discord markdown, spaces and hyphens all disappear in normalization.
+        match = re.search(r'(\d+)letterword', self._normalize(text))
+        return int(match.group(1)) if match else None
+
+    async def _handle_image_captcha(self, message, text):
+        # Only the configured OwO bot may receive a prediction.
+        if str(message.author.id) != self.monitor_id:
+            return
+        self.bot.paused = True
+        self.bot.throttle_until = float('inf')
+        self.bot.stats['last_captcha_msg'] = text[:200]
+        seen = getattr(self, '_image_captcha_messages', set())
+        if message.id in seen or getattr(self.bot, '_solving_captcha', False):
+            return
+        if len(seen) >= 100:
+            seen.clear()
+        seen.add(message.id)
+        self._image_captcha_messages = seen
+        self.bot._solving_captcha = True
+        submitted = False
+        try:
+            await self.play_beep()
+            letter_count = self._image_letter_count(text)
+            if letter_count is None or not 1 <= letter_count <= 26:
+                raise ValueError("Cannot determine the required letter count")
+            answer = await self.bot.captcha_solver.solve_image(
+                message.attachments[0].url, letter_count)
+            if not answer or re.fullmatch(r'[a-z]{%d}' % letter_count, answer) is None:
+                raise ValueError("Model did not return the required number of letters")
+            # This also works when the challenge was posted in a guild channel.
+            await message.author.send(answer)
+            submitted = True
+            self.bot.log("SECURITY", "Image CAPTCHA answer sent to OwO DM; awaiting verification.")
+            self._show_desktop_notification("Answer sent to OwO DM. Waiting for verification.")
+        except Exception as e:
+            self.bot.log("ERROR", f"Image CAPTCHA needs manual solving: {e}")
+            self._show_desktop_notification("Solve the image CAPTCHA manually in OwO DM.")
+        finally:
+            # Stay paused until OwO explicitly confirms verification.
+            if not submitted:
+                self.bot._solving_captcha = False
+
     @commands.Cog.listener()
     async def on_message(self, message):
         if not self.enabled: return
@@ -203,27 +246,9 @@ class Security(commands.Cog):
                 await asyncio.sleep(2)
                 return
 
-            if "letterword" in message.content.lower() and message.attachments:
-                self.bot.log("SECURITY", "Detection AI: Letterword captcha identified in DMs.")
-                count_match = re.search(r'(\d+)\s*letterword', message.content.lower())
-                letter_count = int(count_match.group(1)) if count_match else 5
-                image_url = message.attachments[0].url
-                self.bot.log("SYS", f"Attempting to solve DM Captcha ({letter_count} letters)...")
-                answer = await self.bot.captcha_solver.solve_image(image_url, letter_count)
-                if answer:
-                    self.bot.log("SUCCESS", f"AI Solver Answer: {answer}. Sending to OwO...")
-                    await asyncio.sleep(random.uniform(2.0, 4.0))
-                    async with message.channel.typing():
-                        await asyncio.sleep(len(answer) * 0.1)
-                        await message.channel.send(answer)
-                else:
-                    self.bot.log("ERROR", "AI Solver failed to generate an answer. Pausing bot.")
-                    self.bot.paused = True
-                    self.bot.throttle_until = float('inf')
-                    self._show_desktop_notification("AI Solver failed! Solve manually.")
-                    self.bot.web_solver.enqueue_manual_solve(str(self.bot.user.id), "https://owobot.com/captcha")
+            if message.attachments and self._contains_keyword(message.content, self.image_captcha_keywords):
+                await self._handle_image_captcha(message, message.content)
                 return
-
             captcha_url = self._get_captcha_url(message)
             if not captcha_url:
                 url_match = re.search(r'https?://owobot\.com/captcha/\S+', message.content)
@@ -332,6 +357,10 @@ class Security(commands.Cog):
             self._send_webhook("BAN DETECTED", f"Message:\n{content}")
             return
 
+        if message.attachments and self._contains_keyword(text_to_check, self.image_captcha_keywords):
+            await self._handle_image_captcha(message, text_to_check)
+            return
+
         warning_match = self.warning_pattern.search(text_to_check)
         if warning_match:
             current_warning = int(warning_match.group(1))
@@ -405,34 +434,6 @@ class Security(commands.Cog):
                             self.bot.web_solver.enqueue_manual_solve(str(self.bot.user.id), captcha_url)
                             self._show_desktop_notification(f"Manual solve queued for {self.bot.username}")
                 return
-
-        has_image = len(message.attachments) > 0
-        image_captcha_hit = self._contains_keyword(text_to_check, self.image_captcha_keywords)
-        if has_image and image_captcha_hit:
-            self.bot.paused = True
-            self.bot.throttle_until = float('inf')
-            self.bot.stats['last_captcha_msg'] = text_to_check[:200]
-            self.bot.log("ALARM", "IMAGE CAPTCHA DETECTED! Warning triggered.")
-            await self.play_beep()
-            self._show_desktop_notification("Image captcha detected! Check DMs.")
-            img_urls = "\n".join([att.url for att in message.attachments])
-            self._send_webhook("IMAGE CAPTCHA DETECTED", f"Message:\n{content}\n\nImages:\n{img_urls}")
-
-            count_match = re.search(r'(\d+)\s*letterword', text_to_check)
-            letter_count = int(count_match.group(1)) if count_match else 5
-            image_url = message.attachments[0].url
-            self.bot.log("SYS", f"Attempting to solve image captcha ({letter_count} letters)...")
-            answer = await self.bot.captcha_solver.solve_image(image_url, letter_count)
-            if answer:
-                self.bot.log("SUCCESS", f"AI Solver Answer: {answer}. Sending to OwO...")
-
-                await self.bot.send_message(answer, skip_typing=True, priority=True)
-                self._show_desktop_notification(f"Image captcha solved: {answer}")
-            else:
-                self.bot.log("ERROR", "AI Solver failed to generate an answer for image captcha.")
-                self._show_desktop_notification("AI Solver failed! Solve manually.")
-                self.bot.web_solver.enqueue_manual_solve(str(self.bot.user.id), "https://owobot.com/captcha")
-            return
 
         captcha_keywords_hit = self._contains_keyword(text_to_check, self.captcha_keywords)
         captcha_url = self._get_captcha_url(message)

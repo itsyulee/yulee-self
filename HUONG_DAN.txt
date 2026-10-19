@@ -1,0 +1,22 @@
+BẢN SỬA CAPTCHA ẢNH CHỮ OWО — base 5482ab6
+
+1. Giải nén và chép các file vào đúng đường dẫn trong repo, thay file cũ.
+2. Cài thư viện: python -m pip install -r requirements.txt
+3. Giữ file models/best.onnx sẵn có của repo, sau đó khởi động lại bot.
+
+Thay đổi:
+- Đọc số chữ trong cả “3 letter word”, “3letterword”, “3-letter word” và nội dung có markdown.
+- CAPTCHA ảnh được ưu tiên trước nhánh cảnh báo chung.
+- CAPTCHA xuất hiện trong server hay DM đều trả lời trực tiếp qua DM cho bot OwO đã cấu hình.
+- Chỉ gửi khi kết quả gồm đủ số chữ a-z; không gửi chuỗi thiếu chữ.
+- Chặn xử lý trùng; khi model hoặc gửi DM lỗi thì giữ bot tạm dừng và báo giải thủ công.
+- Sau khi gửi đáp án, tiếp tục tạm dừng đến lúc nhận xác nhận từ OwO.
+- Nhánh CAPTCHA web/API được giữ nguyên.
+
+Kiểm tra: 7 unit tests của luồng mới; thử suy luận local trên ảnh mẫu phát hiện đủ 3 ký tự.
+Chưa kiểm thử gửi DM thật trên tài khoản Discord. Không thay hay huấn luyện lại model.
+
+File tests/test_image_captcha.py có thể chạy bằng:
+python -m unittest discover -s tests -p test_image_captcha.py -v
+
+Bản sửa dựa trên commit 5482ab6; nếu repo của bạn đã khác nhiều, đối chiếu file changes.patch trước khi thay.
