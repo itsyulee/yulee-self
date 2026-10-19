@@ -29,6 +29,12 @@ def main():
     parser.add_argument('--repair', action='store_true', help='Repair installed dependencies')
     args = parser.parse_args()
 
+    # Clear once at startup; keep installation and error logs visible afterwards.
+    if os.name == 'nt':
+        os.system('cls')
+    elif os.environ.get('TERM'):
+        os.system('clear')
+
     print('[YULEESELF] Starting setup...', flush=True)
     try:
         from yulee_engines.setup_engine import YuleeSetupEngine
