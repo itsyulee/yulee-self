@@ -1,262 +1,267 @@
 {
-  "core": {
-    "monitor_bot_id": "408785106942164992",
-    "prefix": "o"
-  },
-  "commands": {
-    "owo": {
-      "enabled": true,
-      "cooldown": [
-        19,
-        22
-      ]
+    "core": {
+        "monitor_bot_id": "408785106942164992",
+        "prefix": "o"
     },
-    "hunt": {
-      "enabled": true,
-      "use_shortform": true,
-      "cooldown": [
-        15,
-        19
-      ]
-    },
-    "battle": {
-      "enabled": true,
-      "use_shortform": true,
-      "cooldown": [
-        15,
-        19
-      ]
-    },
-    "curse": {
-      "enabled": false,
-      "cooldown": [
-        310,
-        400
-      ],
-      "ping": true,
-      "targets": []
-    },
-    "pray": {
-      "enabled": true,
-      "cooldown": [
-        310,
-        400
-      ],
-      "ping": true,
-      "targets": ""
-    },
-    "cookie": {
-      "enabled": false,
-      "id": ""
-    },
-    "daily": {
-      "enabled": true
-    },
-    "coinflip": {
-      "enabled": false,
-      "use_shortform": true,
-      "amount": 400,
-      "side": "h"
-    },
-    "slots": {
-      "enabled": false,
-      "use_shortform": true,
-      "amount": 1
-    },
-    "blackjack": {
-      "enabled": false,
-      "use_shortform": true,
-      "amount": 100
-    },
-    "sell_sac": {
-      "sell": {
-        "enabled": false,
-        "interval_min": 10,
-        "min_cash_trigger": 1000,
-        "type": "all"
-      },
-      "sacrifice": {
-        "enabled": true,
-        "interval_min": 10,
-        "type": "all",
-        "use_shortform": true
-      }
-    },
-    "gems": {
-      "enabled": true,
-      "interval": [
-        15,
-        20
-      ],
-      "order": {
-        "lowestToHighest": false
-      },
-      "tiers": {
-        "common": true,
-        "epic": true,
-        "fabled": false,
-        "legendary": false,
-        "mythical": true,
-        "rare": true,
-        "uncommon": true
-      },
-      "types": {
-        "empoweredGem": true,
-        "huntGem": true,
-        "luckyGem": true,
-        "specialGem": false
-      },
-      "use_gems_set": false
-    },
-    "giveaway": {
-      "enabled": true,
-      "channels": [],
-      "cooldown": 2
-    },
-    "huntbot": {
-      "enabled": true,
-      "use_shortform": true,
-      "cash_to_spend": 3000,
-      "upgrade": {
-        "enabled": true,
-        "priorities": {
-          "efficiency": 4,
-          "duration": 2,
-          "cost": 4,
-          "gain": 3,
-          "exp": 3,
-          "radar": 4
-        }
-      }
-    },
-    "open": {
-      "enabled": true,
-      "crate": {
-        "enabled": true,
-        "type": "all"
-      },
-      "lootbox": {
-        "enabled": true,
-        "type": "all"
-      }
-    },
-    "quest": {
-      "enabled": true,
-      "auto_solve": true,
-      "use_alt_account": true,
-      "interval_h": 6
-    },
-    "rpp": {
-      "enabled": true,
-      "active_commands": [
-        "run",
-        "pup",
-        "piku"
-      ],
-      "interval_s": 60
-    },
-    "shop": {
-      "enabled": false,
-      "itemsToBuy": 1,
-      "cooldown": 3600
-    }
-  },
-  "stealth": {
-    "typing_enabled": true,
-    "speed_preset": "medium",
-    "speed_custom": {
-      "enabled": true,
-      "reaction_min": 0.5,
-      "reaction_max": 1,
-      "key_delay_min": 0.3,
-      "key_delay_max": 0.9,
-      "mistake_rate": 100,
-      "enter_delay_min": 0.1,
-      "enter_delay_max": 0.4
-    },
-    "human_break": {
-      "enabled": true,
-      "duration_min": 14,
-      "interval_min": 45
-    }
-  },
-  "reactionBot": {
-    "enabled": false,
-    "cooldown": [
-      0.5,
-      1
-    ],
-    "hunt_and_battle": false,
-    "owo": false,
-    "pray_and_curse": false
-  },
-  "security": {
-    "enabled": true,
-    "captcha_solver": {
-      "enabled": true,
-      "service": "yescaptcha",
-      "yescaptcha_api_key": "",
-      "nopecha_api_key": "",
-      "anticaptcha_api_key": ""
-    },
-    "open_captcha_url_on_pc": false,
-    "open_captcha_url_on_mobile": false,
-    "notifications": {
-      "desktop": {
-        "enabled": false,
-        "sound": false,
-        "title": "YULEESELF Security Alert"
-      },
-      "mobile": {
-        "enabled": false,
-        "toast": {
-          "enabled": true,
-          "bg_color": "#000000",
-          "position": "middle",
-          "text_color": "#ffffff"
+    "commands": {
+        "owo": {
+            "enabled": true,
+            "cooldown": [
+                19,
+                22
+            ]
         },
-        "tts": {
-          "enabled": false
+        "hunt": {
+            "enabled": true,
+            "use_shortform": true,
+            "cooldown": [
+                15,
+                19
+            ]
         },
-        "vibrate": {
-          "enabled": true,
-          "time": 2
+        "battle": {
+            "enabled": true,
+            "use_shortform": true,
+            "cooldown": [
+                15,
+                19
+            ]
+        },
+        "curse": {
+            "enabled": false,
+            "cooldown": [
+                310,
+                400
+            ],
+            "ping": true,
+            "targets": [
+                "put-curse-target-id-here"
+            ]
+        },
+        "pray": {
+            "enabled": true,
+            "cooldown": [
+                310,
+                400
+            ],
+            "ping": true,
+            "targets": ""
+        },
+        "cookie": {
+            "enabled": false,
+            "id": "cookie-target-id"
+        },
+        "daily": {
+            "enabled": true
+        },
+        "coinflip": {
+            "enabled": false,
+            "use_shortform": true,
+            "amount": 400,
+            "side": "h"
+        },
+        "slots": {
+            "enabled": false,
+            "use_shortform": true,
+            "amount": 1
+        },
+        "blackjack": {
+            "enabled": false,
+            "use_shortform": true,
+            "amount": 100
+        },
+        "sell_sac": {
+            "sell": {
+                "enabled": false,
+                "interval_min": 10,
+                "min_cash_trigger": 1000,
+                "type": "all"
+            },
+            "sacrifice": {
+                "enabled": true,
+                "interval_min": 10,
+                "type": "all",
+                "use_shortform": true
+            }
+        },
+        "gems": {
+            "enabled": true,
+            "interval": [
+                15,
+                20
+            ],
+            "order": {
+                "lowestToHighest": false
+            },
+            "tiers": {
+                "common": true,
+                "epic": true,
+                "fabled": false,
+                "legendary": false,
+                "mythical": true,
+                "rare": true,
+                "uncommon": true
+            },
+            "types": {
+                "empoweredGem": true,
+                "huntGem": true,
+                "luckyGem": true,
+                "specialGem": false
+            },
+            "use_gems_set": false
+        },
+        "giveaway": {
+            "enabled": true,
+            "channels": [
+                "1559187996798885958",
+                "1559774823297712218"
+            ],
+            "cooldown": 2
+        },
+        "huntbot": {
+            "enabled": true,
+            "use_shortform": true,
+            "cash_to_spend": 3000,
+            "upgrade": {
+                "enabled": true,
+                "priorities": {
+                    "efficiency": 4,
+                    "duration": 2,
+                    "cost": 4,
+                    "gain": 3,
+                    "exp": 3,
+                    "radar": 4
+                }
+            }
+        },
+        "open": {
+            "enabled": true,
+            "crate": {
+                "enabled": true,
+                "type": "all"
+            },
+            "lootbox": {
+                "enabled": true,
+                "type": "all"
+            }
+        },
+        "quest": {
+            "enabled": true,
+            "auto_solve": true,
+            "use_alt_account": true,
+            "interval_h": 6
+        },
+        "rpp": {
+            "enabled": true,
+            "active_commands": [
+                "run",
+                "pup",
+                "piku"
+            ],
+            "interval_s": 60
+        },
+        "shop": {
+            "enabled": false,
+            "itemsToBuy": 1,
+            "cooldown": 3600
         }
-      }
     },
-    "webhook": {
-      "enabled": true,
-      "url": ""
+    "stealth": {
+        "typing_enabled": true,
+        "speed_preset": "medium",
+        "speed_custom": {
+            "enabled": true,
+            "reaction_min": 0.5,
+            "reaction_max": 1,
+            "key_delay_min": 0.3,
+            "key_delay_max": 0.9,
+            "mistake_rate": 100,
+            "enter_delay_min": 0.1,
+            "enter_delay_max": 0.4
+        },
+        "human_break": {
+            "enabled": true,
+            "duration_min": 14,
+            "interval_min": 45
+        }
+    },
+    "reactionBot": {
+        "enabled": false,
+        "cooldown": [
+            0.5,
+            1
+        ],
+        "hunt_and_battle": false,
+        "owo": false,
+        "pray_and_curse": false
+    },
+    "security": {
+        "enabled": true,
+        "captcha_solver": {
+            "enabled": true,
+            "service": "yescaptcha",
+            "yescaptcha_api_key": "a19a70c880bd4da0e8a4d6277980367a57b332aa143486",
+            "nopecha_api_key": "",
+            "anticaptcha_api_key": ""
+        },
+        "open_captcha_url_on_pc": true,
+        "open_captcha_url_on_mobile": false,
+        "notifications": {
+            "desktop": {
+                "enabled": false,
+                "sound": false,
+                "title": "YULEESELF Security Alert"
+            },
+            "mobile": {
+                "enabled": false,
+                "toast": {
+                    "enabled": true,
+                    "bg_color": "#000000",
+                    "position": "middle",
+                    "text_color": "#ffffff"
+                },
+                "tts": {
+                    "enabled": false
+                },
+                "vibrate": {
+                    "enabled": true,
+                    "time": 2
+                }
+            }
+        },
+        "webhook": {
+            "enabled": true,
+            "url": "https://discord.com/api/webhooks/1559495326463696976/E-GgWqVWBX9kBbmnT-mcFjpCzasDySXvecMAJA6sGs9GZH21rJ4CoywLCevk-I-l_xYy"
+        }
+    },
+    "boss": {
+        "enabled": true,
+        "ignore_guilds": [],
+        "join_all_guilds": false,
+        "join_chance": 100
+    },
+    "level_grind": {
+        "enabled": true,
+        "cooldown": [
+            60,
+            90
+        ],
+        "max_length": 100,
+        "min_length": 10
+    },
+    "utilities": {
+        "autochannel": {
+            "enabled": true,
+            "cooldown": [
+                500,
+                650
+            ]
+        }
+    },
+    "gambling": {
+        "min_balance": 400,
+        "max_balance": 1000,
+        "bet_strategy": "martingale",
+        "max_bet": 10000
     }
-  },
-  "boss": {
-    "enabled": true,
-    "ignore_guilds": [],
-    "join_all_guilds": false,
-    "join_chance": 100
-  },
-  "level_grind": {
-    "enabled": true,
-    "cooldown": [
-      60,
-      90
-    ],
-    "max_length": 100,
-    "min_length": 10
-  },
-  "utilities": {
-    "autochannel": {
-      "enabled": true,
-      "cooldown": [
-        500,
-        650
-      ]
-    }
-  },
-  "gambling": {
-    "min_balance": 400,
-    "max_balance": 1000,
-    "bet_strategy": "martingale",
-    "max_bet": 10000
-  }
 }

@@ -1,1 +1,56 @@
-{}
+{
+    "1124368476044271750": {
+        "last_reset_date": "2026-10-15",
+        "captchas_solved": 18,
+        "bans_detected": 0,
+        "warnings_detected": 5,
+        "hunt_count": 0,
+        "battle_count": 0,
+        "owo_count": 66,
+        "total_cmd_count": 243,
+        "other_count": 177,
+        "gems_used": 0,
+        "username": "gianhungayayquaytrolai",
+        "quest_data": [],
+        "next_quest_timer": null,
+        "current_cash": 0,
+        "gambling_stats": {
+            "total_wins": 0,
+            "total_losses": 0,
+            "total_wagered": 0,
+            "net_profit": 0,
+            "current_streak": 0,
+            "best_streak": 0,
+            "worst_streak": 0,
+            "biggest_win": 0,
+            "last_outcome": null
+        }
+    },
+    "711837366553411634": {
+        "last_reset_date": "2026-10-15",
+        "captchas_solved": 55,
+        "bans_detected": 0,
+        "warnings_detected": 12,
+        "hunt_count": 71,
+        "battle_count": 69,
+        "owo_count": 72,
+        "total_cmd_count": 249,
+        "other_count": 177,
+        "gems_used": 0,
+        "username": "ecobuonneuadelaicayviet",
+        "quest_data": [],
+        "next_quest_timer": null,
+        "current_cash": 329616,
+        "gambling_stats": {
+            "total_wins": 0,
+            "total_losses": 2,
+            "total_wagered": 3,
+            "net_profit": -3,
+            "current_streak": -2,
+            "best_streak": 0,
+            "worst_streak": -2,
+            "biggest_win": 0,
+            "last_outcome": "loss"
+        }
+    }
+}

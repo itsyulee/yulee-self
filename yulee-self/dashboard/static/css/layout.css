@@ -1,0 +1,300 @@
+/* 
+
+# This file is part of YuleeSelf-UwU.
+# Copyright (c) 2025-Present Routo
+#
+# YuleeSelf-UwU is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# You should have received a copy of the GNU General Public License
+# along with YuleeSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
+
+
+
+*/
+
+.dash-logo-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.dash-logo-img { height: 32px; width: auto; }
+.dash-logo-text {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    letter-spacing: 2px;
+    background: linear-gradient(90deg, #82ddf7 20%, #f0fbff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 10px rgba(130, 221, 247,0.2);
+}
+
+.top-bar-fixed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: rgba(16,36,55,0.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    z-index: 1000;
+}
+.top-bar-fixed .top-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.top-bar-fixed .top-bar-center {
+    flex: 1;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-family: var(--font-mono);
+}
+.top-bar-fixed .top-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.top-bar-fixed .account-name-display {
+    color: #dfedf5;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+
+.app-shell {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.sidebar {
+    width: 260px;
+    background-color: #142c40;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    flex-shrink: 0;
+    margin-top: 60px; 
+    height: calc(100vh - 60px);
+    overflow-y: auto;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 15px;
+    white-space: nowrap;
+}
+.brand-main {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 800;
+    font-size: 1.3em;
+    background: linear-gradient(90deg, #82ddf7, #ffffff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 10px rgba(130, 221, 247,0.3);
+}
+.brand-sub {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 0.8em;
+    color: #ffffff;
+    letter-spacing: 2px;
+    margin-left: -2px;
+}
+
+.nav-links {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 20px;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: 0 8px 8px 0;
+    transition: all 0.3s cubic-bezier(0.175,0.885,0.32,1.275);
+    font-weight: 600;
+    font-size: 1.1rem;
+    cursor: pointer;
+    position: relative;
+    border-left: 0px solid var(--primary);
+}
+.nav-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 0;
+    background: var(--primary);
+    transition: 0.3s;
+    box-shadow: 0 0 10px var(--primary);
+}
+.nav-item:hover, .nav-item.active {
+    background: rgba(130, 221, 247,0.05);
+    color: var(--primary);
+    transform: translateX(10px);
+    text-shadow: 0 0 10px rgba(130, 221, 247,0.5);
+}
+.nav-item:hover::before, .nav-item.active::before { height: 70%; }
+.nav-item:active { transform: translateX(5px) scale(0.98); }
+.nav-item.active .icon-svg {
+    background-color: var(--primary);
+    filter: drop-shadow(0 0 8px var(--primary));
+    transform: scale(1.1);
+}
+
+.content-area {
+    flex: 1;
+    padding: 80px 30px 30px 30px;
+    overflow-y: auto;
+    background: linear-gradient(135deg, rgba(35,76,100,0.5) 0%, rgba(13,33,50,1) 100%);
+    margin-left: 0;
+    min-height: 0;
+    height: 100%;
+}
+
+.view {
+    display: none;
+    width: 100%;
+}
+.active-view {
+    display: block;
+    animation: fadeIn 0.4s ease;
+}
+
+.top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.top-controls { display: flex; gap: 10px; align-items: center; }
+
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #142e43;
+    padding: 10px 15px;
+    border-radius: 6px;
+    border: 1px solid #315066;
+    margin-bottom: 10px;
+}
+.ping-dot {
+    width: 8px;
+    height: 8px;
+    background: #00ff88;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #00ff88;
+    animation: pulse 2s infinite;
+}
+.ping-dot.paused {
+    background: #f59e0b;
+    box-shadow: 0 0 10px #f59e0b;
+}
+#botStatus {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: #00ff88;
+}
+.version {
+    font-size: 0.75rem;
+    color: #82ddf7;
+    text-align: center;
+    font-family: var(--font-mono);
+}
+.social-links {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+.social-btn {
+    color: #7192a5;
+    transition: 0.3s;
+    cursor: pointer;
+    font-size: 1.2rem;
+}
+.social-btn:hover { color: #82ddf7; transform: translateY(-2px); }
+
+
+.mobile-menu-toggle {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    cursor: pointer;
+    background: transparent;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    transition: 0.3s;
+}
+.mobile-menu-toggle:hover { border-color: var(--border); }
+.mobile-menu-toggle span {
+    display: block;
+    width: 26px;
+    height: 3px;
+    background: var(--primary);
+    border-radius: 2px;
+    transition: all 0.3s ease;
+}
+.mobile-menu-toggle.active span:nth-child(1) { transform: rotate(45deg) translate(6px,6px); width:24px; }
+.mobile-menu-toggle.active span:nth-child(2) { opacity:0; }
+.mobile-menu-toggle.active span:nth-child(3) { transform: rotate(-45deg) translate(6px,-6px); width:24px; }
+
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    z-index: 999;
+    display: none;
+    backdrop-filter: blur(2px);
+}
+.sidebar-overlay.active { display: block; }
+
+.mobile-sidebar-close {
+    display: none;
+    font-size: 2.2rem;
+    color: var(--primary);
+    cursor: pointer;
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    line-height:1;
+    text-shadow: 0 0 10px rgba(130, 221, 247,0.5);
+    transition:0.3s;
+    z-index:1002;
+}
+.mobile-sidebar-close:hover { color:#fff; transform: rotate(90deg); }
+
+.account-name-display {
+    color: #dfedf5;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+/* Icy glass layout accents, dimensions unchanged */
+.top-bar-fixed { background: rgba(20,48,70,.93); border-bottom-color: rgba(178,231,251,.22); }
+.sidebar { background: linear-gradient(180deg,#17384f 0%,#102a40 100%); }
+.content-area { background: radial-gradient(ellipse at 82% 0%,rgba(89,167,207,.14),transparent 48%),linear-gradient(135deg,#19364b 0%,#102437 100%); }
+.nav-item:hover,.nav-item.active { background: rgba(136,220,249,.13); text-shadow:0 0 12px rgba(166,233,255,.3); }
+.dash-logo-text,.brand-main { background:linear-gradient(95deg,#7ed8f4 8%,#c8f2ff 58%,#fff 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-shadow:none; }

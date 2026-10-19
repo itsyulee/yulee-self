@@ -1,0 +1,590 @@
+<!--
+  This file is part of YuleeSelf-UwU.
+  Copyright (c) 2025-Present Routo
+
+  YuleeSelf-UwU is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  You should have received a copy of the GNU General Public License
+  along with YuleeSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
+-->
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>YULEESELF — Auth</title>
+    <link rel="icon" type="image/png" href="/static/assets/yuleelogo.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Outfit:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --red: #82ddf7;
+            --red-dim: rgba(130,221,247, 0.4);
+            --red-faint: rgba(130,221,247, 0.08);
+            --red-glow: rgba(130,221,247, 0.6);
+            --bg: #102437;
+            --panel: rgba(24, 56, 79, 0.91);
+            --text: #e9f9ff;
+            --mono: 'JetBrains Mono', monospace;
+            --sans: 'Outfit', sans-serif;
+        }
+
+        html,
+        body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background: var(--bg);
+            font-family: var(--sans);
+        }
+
+
+        #bgCanvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+        }
+
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background: repeating-linear-gradient(0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 0, 0, 0.07) 2px,
+                    rgba(0, 0, 0, 0.07) 4px);
+        }
+
+
+        .wrapper {
+            position: fixed;
+            inset: 0;
+            z-index: 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 400px;
+            padding: 48px 40px 44px;
+            background: var(--panel);
+            border: 1px solid var(--red-dim);
+            position: relative;
+            transition: border-color 0.6s ease, box-shadow 0.6s ease;
+        }
+
+        .card::before,
+        .card::after,
+        .card .corner-br,
+        .card .corner-bl {
+            content: '';
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            border-color: var(--red);
+            border-style: solid;
+        }
+
+        .card::before {
+            top: -1px;
+            left: -1px;
+            border-width: 2px 0 0 2px;
+        }
+
+        .card::after {
+            top: -1px;
+            right: -1px;
+            border-width: 2px 2px 0 0;
+        }
+
+        .card .corner-br {
+            bottom: -1px;
+            right: -1px;
+            border-width: 0 2px 2px 0;
+        }
+
+        .card .corner-bl {
+            bottom: -1px;
+            left: -1px;
+            border-width: 0 0 2px 2px;
+        }
+
+
+        .card__title {
+            font-family: var(--mono);
+            font-size: clamp(1.3rem, 4vw, 1.75rem);
+            font-weight: 600;
+            color: var(--red);
+            text-shadow: 0 0 8px var(--red-glow);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 10px;
+            min-height: 2.2rem;
+        }
+
+        .card__title .cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.2em;
+            background: var(--red);
+            margin-left: 3px;
+            vertical-align: middle;
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
+
+
+        .card__sub {
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            color: rgba(255, 60, 60, 0.5);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 38px;
+        }
+
+        .error-msg {
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            color: #ff718a;
+            letter-spacing: 1px;
+            text-align: center;
+            margin-bottom: 18px;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+
+        .field {
+            position: relative;
+            margin-bottom: 34px;
+        }
+
+        .field input {
+            width: 100%;
+            padding: 14px 0 8px;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(130,221,247, 0.3);
+            color: #fff;
+            font-family: var(--sans);
+            font-size: 1rem;
+            outline: none;
+            caret-color: var(--red);
+            transition: border-color 0.3s ease;
+        }
+
+        .field label {
+            position: absolute;
+            left: 0;
+            top: 14px;
+            font-family: var(--mono);
+            font-size: 0.9rem;
+            color: rgba(255, 80, 80, 0.6);
+            letter-spacing: 1px;
+            pointer-events: none;
+            transition: top 0.25s cubic-bezier(0.25, 0.8, 0.25, 1),
+                font-size 0.25s cubic-bezier(0.25, 0.8, 0.25, 1),
+                color 0.25s ease;
+        }
+
+
+        .field input:focus+label,
+        .field input:not(:placeholder-shown)+label {
+            top: -6px;
+            font-size: 0.68rem;
+            color: var(--red);
+            text-shadow: 0 0 6px rgba(130,221,247, 0.5);
+        }
+
+        .field input:focus {
+            border-bottom-color: var(--red);
+            box-shadow: 0 6px 8px -6px rgba(130,221,247, 0.4);
+        }
+
+        /* ── auth button ── */
+        #loginBtn {
+            width: 100%;
+            padding: 14px;
+            margin-top: 8px;
+            background: var(--red);
+            color: #fff;
+            border: none;
+            font-family: var(--mono);
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            cursor: pointer;
+            /* smooth all transitions */
+            transition: background 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+                color 0.2s ease;
+            box-shadow: 0 0 20px rgba(130,221,247, 0.35);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #loginBtn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0);
+            transition: background 0.15s ease;
+        }
+
+        #loginBtn:hover {
+            background: #78d7f2;
+            box-shadow: 0 0 28px rgba(130,221,247, 0.6);
+        }
+
+        #loginBtn:active {
+            transform: scale(0.96);
+            background: #3787ae;
+            box-shadow: 0 0 10px rgba(130,221,247, 0.4);
+        }
+
+        #loginBtn:active::after {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .card.success {
+            border-color: #00ff88;
+            box-shadow: 0 0 40px rgba(0, 255, 136, 0.2), inset 0 0 30px rgba(0, 255, 136, 0.04);
+        }
+
+        .card.success .card__title {
+            color: #00ff88;
+            text-shadow: 0 0 12px rgba(0, 255, 136, 0.8);
+        }
+
+        .card.success::before,
+        .card.success::after,
+        .card.success .corner-br,
+        .card.success .corner-bl {
+            border-color: #00ff88;
+        }
+
+        #loginBtn.success-btn {
+            background: #00c86e;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+            color: #000;
+        }
+
+        /* ── snake animation for error ── */
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20% {
+                transform: translateX(-8px);
+            }
+
+            40% {
+                transform: translateX(8px);
+            }
+
+            60% {
+                transform: translateX(-5px);
+            }
+
+            80% {
+                transform: translateX(5px);
+            }
+        }
+
+        .card.shake {
+            animation: shake 0.4s ease;
+        }
+
+        /* ── responsive ── */
+        @media (max-width: 480px) {
+            .card {
+                padding: 36px 24px 32px;
+            }
+
+            .card__title {
+                letter-spacing: 2px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .card {
+                padding: 28px 18px 26px;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .card {
+                max-width: 440px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <canvas id="bgCanvas"></canvas>
+
+    <div class="wrapper">
+        <div class="card" id="card">
+            <span class="corner-br"></span>
+            <span class="corner-bl"></span>
+
+            <h1 class="card__title" id="heading"><span class="cursor" id="cur"></span></h1>
+            <p class="card__sub">SECURE ACCESS</p>
+            <div class="error-msg" id="error-display"></div>
+
+            <form id="loginForm">
+                <div class="field">
+                    <input type="text" id="username" placeholder=" " required autocomplete="username">
+                    <label for="username">Username</label>
+                </div>
+                <div class="field">
+                    <input type="password" id="password" placeholder=" " required autocomplete="current-password">
+                    <label for="password">Password</label>
+                </div>
+                <button type="submit" id="loginBtn">Authenticate</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ─── typing effect ─────────────────────────────────
+        (function () {
+            const text = "YULEESELF";
+            const el = document.getElementById('heading');
+            const cursor = document.getElementById('cur');
+            let i = 0;
+            function tick() {
+                if (i < text.length) {
+                    el.insertBefore(document.createTextNode(text[i]), cursor);
+                    i++;
+                    setTimeout(tick, 80);
+                }
+            }
+            tick();
+        })();
+
+        let successTriggered = false;
+
+        document.getElementById('loginForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            const err = document.getElementById('error-display');
+            const btn = document.getElementById('loginBtn');
+            const card = document.getElementById('card');
+
+            btn.textContent = "Processing…";
+            btn.style.pointerEvents = "none";
+            err.style.display = 'none';
+
+            fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: u, password: p })
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+
+                        card.classList.add('success');
+                        btn.textContent = "Access Granted";
+                        btn.classList.add('success-btn');
+                        btn.style.pointerEvents = "none";
+
+
+                        successTriggered = true;
+                        spawnNetworkLines();
+
+                        setTimeout(() => { window.location.href = '/'; }, 1900);
+                    } else {
+                        btn.textContent = "Authenticate";
+                        btn.style.pointerEvents = "auto";
+                        err.textContent = data.error || "Invalid credentials";
+                        err.style.display = 'block';
+
+                        card.classList.remove('shake');
+                        void card.offsetWidth;
+                        card.classList.add('shake');
+                    }
+                })
+                .catch(() => {
+                    btn.textContent = "Authenticate";
+                    btn.style.pointerEvents = "auto";
+                    err.textContent = "Connection Error";
+                    err.style.display = 'block';
+                });
+        });
+
+        // ─── canvas ────────────────────────────────────────
+        const canvas = document.getElementById('bgCanvas');
+        const ctx = canvas.getContext('2d');
+        let W, H;
+
+        function resize() {
+            W = canvas.width = window.innerWidth;
+            H = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Dot {
+            constructor() { this.reset(); }
+            reset() {
+                this.x = Math.random() * W;
+                this.y = Math.random() * H;
+                this.vx = (Math.random() - 0.5) * 0.4;
+                this.vy = (Math.random() - 0.5) * 0.4;
+                this.r = Math.random() * 1.5 + 0.5;
+            }
+            step() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.x < 0 || this.x > W) this.vx *= -1;
+                if (this.y < 0 || this.y > H) this.vy *= -1;
+            }
+        }
+
+        const DOTS = Array.from({ length: 55 }, () => new Dot());
+
+        const network = [];
+        function spawnNetworkLines() {
+            const cx = W / 2, cy = H / 2;
+            const generators = [
+                () => ({ sx: Math.random() * W, sy: 0 }),
+                () => ({ sx: Math.random() * W, sy: H }),
+                () => ({ sx: 0, sy: Math.random() * H }),
+                () => ({ sx: W, sy: Math.random() * H }),
+            ];
+            for (let i = 0; i < 80; i++) {
+                const g = generators[Math.floor(Math.random() * generators.length)]();
+                const delay = i * 18;                         // stagger
+                network.push({
+                    sx: g.sx, sy: g.sy,
+                    cx: g.sx + (cx - g.sx) * (0.3 + Math.random() * 0.4),
+                    cy: g.sy + (cy - g.sy) * (0.3 + Math.random() * 0.4),
+                    tx: cx, ty: cy,
+                    t: 0,
+                    speed: 0.012 + Math.random() * 0.016,
+                    delay,
+                    elapsed: 0,
+                    active: false,
+                });
+            }
+        }
+
+        let rafTime = 0;
+        function drawNetworkLines(dt) {
+            ctx.lineWidth = 1.2;
+            network.forEach(n => {
+                n.elapsed += dt;
+                if (n.elapsed < n.delay) return;
+                if (!n.active) n.active = true;
+                n.t = Math.min(n.t + n.speed, 1);
+                const t = n.t;
+                const ex = (1 - t) * (1 - t) * n.sx + 2 * (1 - t) * t * n.cx + t * t * n.tx;
+                const ey = (1 - t) * (1 - t) * n.sy + 2 * (1 - t) * t * n.cy + t * t * n.ty;
+
+                // trail line
+                ctx.strokeStyle = `rgba(0, 255, 120, ${0.6 * (1 - t * 0.6)})`;
+                ctx.beginPath();
+                ctx.moveTo(n.sx, n.sy);
+                ctx.quadraticCurveTo(n.cx, n.cy, ex, ey);
+                ctx.stroke();
+
+                // leading dot
+                ctx.fillStyle = `rgba(0, 255, 120, ${1 - t * 0.4})`;
+                ctx.beginPath();
+                ctx.arc(ex, ey, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function loop(ts) {
+            const dt = ts - rafTime;
+            rafTime = ts;
+
+            ctx.fillStyle = "rgba(5,0,0,0.22)";
+            ctx.fillRect(0, 0, W, H);
+
+            if (!successTriggered) {
+                DOTS.forEach(d => d.step());
+                for (let i = 0; i < DOTS.length; i++) {
+                    for (let j = i + 1; j < DOTS.length; j++) {
+                        const dx = DOTS[i].x - DOTS[j].x;
+                        const dy = DOTS[i].y - DOTS[j].y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 110) {
+                            ctx.strokeStyle = `rgba(130,221,247,${(1 - dist / 110) * 0.35})`;
+                            ctx.lineWidth = 0.5;
+                            ctx.beginPath();
+                            ctx.moveTo(DOTS[i].x, DOTS[i].y);
+                            ctx.lineTo(DOTS[j].x, DOTS[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                    ctx.fillStyle = "rgba(130,221,247,0.25)";
+                    ctx.beginPath();
+                    ctx.arc(DOTS[i].x, DOTS[i].y, DOTS[i].r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            } else {
+                drawNetworkLines(dt);
+            }
+
+            requestAnimationFrame(loop);
+        }
+        requestAnimationFrame(ts => { rafTime = ts; requestAnimationFrame(loop); });
+    </script>
+</body>
+
+</html>

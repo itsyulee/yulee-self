@@ -1,0 +1,313 @@
+/* 
+
+# This file is part of YuleeSelf-UwU.
+# Copyright (c) 2025-Present Routo
+#
+# YuleeSelf-UwU is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# You should have received a copy of the GNU General Public License
+# along with YuleeSelf-UwU. If not, see <https://www.gnu.org/licenses/>.
+
+
+
+*/
+
+function initDashCharts() {
+    try {
+        const c2 = document.getElementById('lineChart').getContext('2d');
+        lineChart = new Chart(c2, {
+            type: 'line',
+            data: { labels: Array(30).fill(''), datasets: [{ data: Array(30).fill(0), borderColor: '#ff1f1f', backgroundColor: 'rgba(255,31,31,0.05)', fill: true, pointRadius: 2, pointHoverRadius: 5, tension: 0.3 }] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { x: { display: false }, y: { min: 0, suggestedMax: 10, grid: { color: '#222' }, ticks: { color: '#555', font: { size: 10 } } } },
+                plugins: { legend: { display: false } }
+            }
+        });
+    } catch (e) { console.warn("Dashboard charts blocked"); }
+}
+
+    
+const controlStatuses = new Map();
+const pendingControls = new Set();
+let controlRevision = 0;
+
+function syncControlButtons() {
+    const status = controlStatuses.get(currentAccountId);
+    const busy = pendingControls.has(currentAccountId);
+    document.querySelectorAll('[data-bot-action], button[onclick*="action("]').forEach(button => {
+        const legacyAction = (button.getAttribute('onclick') || '').match(/action\(['"](start|resume|stop|pause)['"]/);
+        const rawAction = button.dataset.botAction || (legacyAction && legacyAction[1]);
+        const action = ({resume: 'start', pause: 'stop'})[rawAction] || rawAction;
+        if (action !== 'start' && action !== 'stop') return;
+        button.dataset.botAction = action;
+        button.disabled = !currentAccountId || busy || !status || status === 'OFFLINE' ||
+            (action === 'start' && status === 'ONLINE') ||
+            (action === 'stop' && status === 'PAUSED');
+        button.setAttribute('aria-busy', String(busy));
+        button.setAttribute('aria-disabled', String(button.disabled));
+    });
+}
+
+function update(forceLogs = false) {
+    const requestedAccountId = currentAccountId;
+    const requestedRevision = controlRevision;
+    const q = currentAccountId ? `?id=${currentAccountId}` : '';
+    return fetch(`/api/stats${q}`, {cache: 'no-store'}).then(r => { if (!r.ok) throw new Error('Failed to load stats'); return r.json(); }).then(d => {
+        if (requestedAccountId !== currentAccountId || requestedRevision !== controlRevision) return;
+        if (!pendingControls.has(requestedAccountId)) {
+            if (d && d.status) {
+                const status = String(d.status).toUpperCase();
+                const normalized = status === 'OFFLINE' ? 'OFFLINE' :
+                    typeof d.bot?.paused === 'boolean' ? (d.bot.paused ? 'PAUSED' : 'ONLINE') :
+                    ({RUNNING: 'ONLINE', STOPPED: 'PAUSED'})[status] || status;
+                controlStatuses.set(requestedAccountId, normalized);
+            }
+            else controlStatuses.delete(requestedAccountId);
+            syncControlButtons();
+        }
+        if (forceLogs) lastLogsHash = null;
+        if (!d || Object.keys(d).length === 0) return;
+        if (d.bot) {
+            console.log(`[Stats Update] ${d.bot.username} (#${d.bot.user_id}): ${Object.keys(d.cmd_states || {}).length} commands in scheduler.`);
+            const nameEl = document.getElementById('currentAccountName');
+            if (nameEl) nameEl.innerText = `ACCOUNT: ${d.bot.username}`;
+        }
+        document.getElementById('cash').innerText = d.cash == null ? '—' : d.cash.toLocaleString();
+        if (d.uptime) document.getElementById('uptimeDisplay').innerText = d.uptime;
+        if (d.logs) renderLogs(d.logs);
+        const dot = document.getElementById('statusDot'), lbl = document.getElementById('botStatus');
+        lbl.innerText = d.status; dot.className = "ping-dot " + (d.status === "PAUSED" ? "paused" : "");
+        if (d.status === "PAUSED" && d.security && d.security.last_message) {
+            document.getElementById('securityAlert').style.display = 'flex';
+            document.getElementById('captchaMsg').innerText = d.security.last_message;
+
+        } else {
+            document.getElementById('securityAlert').style.display = 'none';
+        }
+        if (d.chart_data) {
+            document.getElementById('huntsToday').innerHTML = `${d.chart_data.hunt} <span style="font-size:0.5em; color:var(--success);" id="huntsSession">(${d.chart_data.session_hunt} this session)</span>`;
+            document.getElementById('battlesToday').innerHTML = `${d.chart_data.battle} <span style="font-size:0.5em; color:#3b82f6;" id="battlesSession">(${d.chart_data.session_battle} this session)</span>`;
+            document.getElementById('cpm').innerText = d.chart_data.perf_bpm;
+            if (document.getElementById('totalOwO')) document.getElementById('totalOwO').innerHTML = `${d.chart_data.owo} <span style="font-size:0.5em; color:#a855f7;" id="owoSession">(${d.chart_data.session_owo} this session)</span>`;
+        }
+        if (d.security) {
+            const sc = document.getElementById('sec-captchas'); if (sc) sc.innerText = d.security.captchas;
+            const sb = document.getElementById('sec-bans'); if (sb) sb.innerText = d.security.bans;
+            const sw = document.getElementById('sec-warns'); if (sw) sw.innerText = d.security.warnings;
+        }
+        if (lineChart && d.chart_data) {
+            lineChart.data.datasets[0].data.push(d.chart_data.perf_bpm);
+            lineChart.data.datasets[0].data.shift();
+            lineChart.update('none');
+        }
+        try { renderQuests(d.quest_data, d.next_quest_timer, d); } catch(e) { console.error("Quest Render Error:", e); }
+        try { if (d.cmd_states) renderScheduler(d.cmd_states); } catch(e) { console.error("Scheduler Render Error in update():", e); }
+        try { fetchSecuritySummary(); } catch(e) { console.error("Security Summary Error:", e); }
+    });
+}
+
+
+function renderScheduler(states) {
+    const list = document.getElementById('schedulerList');
+    if (!list) return;
+    try {
+        const now = Date.now() / 1000;
+        const items = Object.entries(states || {}).map(([id, s]) => {
+            try {
+                const lastRan = s.last_ran || 0;
+                const delay = s.delay || 1;
+                const nextRun = lastRan + delay;
+                const remaining = Math.max(0, nextRun - now);
+                return { id, priority: s.priority || 3, delay: delay, in_queue: !!s.in_queue, remaining };
+            } catch(e) {
+                return null;
+            }
+        }).filter(item => item !== null);
+        items.sort((a, b) => (a.remaining || 0) - (b.remaining || 0));
+        if (items.length === 0) {
+            list.innerHTML = '<div style="color:#666; font-style:italic; font-size:0.9rem; text-align:center; padding-top:20px;">No scheduled actions</div>';
+            return;
+        }
+        list.innerHTML = items.map(item => {
+            const name = item.id.toUpperCase();
+            let statusHtml = '';
+            let progress = 0;
+            if (item.in_queue) {
+                statusHtml = `<span style="color:var(--success); font-size:0.8rem; font-weight:bold;"><span class="icon-svg" style="--icon: url('/static/assets/yulee_icons/sync.svg'); animation: spin 2s linear infinite;"></span> QUEUED</span>`;
+                progress = 100;
+            } else {
+                const displayTime = Math.ceil(item.remaining);
+                const timeStr = displayTime > 60 ? `${Math.floor(displayTime / 60)}m ${displayTime % 60}s` : `${displayTime}s`;
+                statusHtml = `<span style="color:#aaa; font-family:var(--font-mono); font-size:0.8rem;">in ${timeStr}</span>`;
+                progress = Math.min(100, Math.max(0, 100 - (item.remaining / item.delay) * 100));
+            }
+            const pColor = item.priority <= 2 ? 'var(--primary)' : '#888';
+            return `
+                <div style="background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.05); border-radius:6px; padding:8px 12px; display:flex; flex-direction:column; gap:6px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="width:8px; height:8px; border-radius:50%; background:${pColor}; display:inline-block; box-shadow:0 0 5px ${pColor};"></span>
+                            <span style="color:#ddd; font-weight:600; font-size:0.85rem;">${name}</span>
+                        </div>
+                        ${statusHtml}
+                    </div>
+                    <div style="height:3px; background:rgba(255,255,255,0.05); border-radius:2px; overflow:hidden;">
+                        <div style="height:100%; width:${progress}%; background:${item.in_queue ? 'var(--success)' : '#444'}; transition:width 1s linear;"></div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (e) {
+        console.error("Scheduler Render Error:", e);
+        list.innerHTML = '<div style="color:#666; font-style:italic; font-size:0.9rem; text-align:center; padding-top:20px;">Render Error (Check Console)</div>';
+    }
+}
+
+function renderQuests(quests, timer, data = {}) {
+    const escapeQuest = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const formatTimer = value => value && value.timestamp ? new Date(value.timestamp * 1000).toLocaleString() : (value || '');
+    const groups = [
+        ['Quests · o quest', quests || [], timer],
+        ['Daily checklist · o cl', data.daily_checklist_data || [], data.daily_checklist_timer],
+        ['Weekly checklist · o weekly', data.weekly_checklist_data || [], data.weekly_checklist_timer]
+    ];
+    quests = groups.flatMap(([group, rows, reset]) => rows.map(q => ({...q, group, reset})));
+    timer = formatTimer(timer);
+    const list = document.getElementById('questList');
+    const timerEl = document.getElementById('nextQuestTimer');
+    if (!list || !timerEl) return;
+    if (timer) {
+        timerEl.innerHTML = `<span class="icon-svg" style="--icon: url('/static/assets/yulee_icons/clock.svg'); width: 14px; height: 14px;"></span> Next quest: ${escapeQuest(timer)}`;
+        timerEl.style.display = 'block';
+    } else {
+        timerEl.style.display = 'none';
+    }
+    const imageSections = [['quest', 'Quests · o quest'], ['daily', 'Daily checklist · o cl'], ['weekly', 'Weekly checklist · o weekly']].map(([kind, label]) => {
+        const snapshot = (data.quest_images || {})[kind];
+        if (!snapshot || !Array.isArray(snapshot.urls)) return '';
+        const urls = snapshot.urls.filter(url => {
+            try { const u = new URL(url); return u.protocol === 'https:' && ['media.discordapp.net', 'cdn.discordapp.com'].includes(u.hostname); }
+            catch { return false; }
+        });
+        if (!urls.length) return '';
+        return `<section style="margin:12px 0"><div style="font-weight:600">${escapeQuest(label)}</div>
+            <small>OwO snapshot · ${escapeQuest(new Date(snapshot.updated_at * 1000).toLocaleString())}</small>
+            ${urls.map(url => `<img src="${escapeQuest(url)}" alt="${escapeQuest(label)}" referrerpolicy="no-referrer" style="display:block;max-width:100%;height:auto;margin:8px 0;border-radius:8px">`).join('')}
+            <small>Run this command again to refresh the image.</small></section>`;
+    }).join('');
+    if ((!quests || quests.length === 0) && !imageSections) {
+        list.innerHTML = '<div style="color:#666; font-style:italic; text-align:center; padding: 20px;">No active quests tracked.<br><span style="font-size:0.8rem; opacity:0.7;">Run "o quest", "o cl" or "o weekly" to sync with OwO.</span></div>';
+        return;
+    }
+    list.innerHTML = quests.map((q, index) => {
+        const percent = Math.min(100, Math.round((q.current / q.total) * 100));
+        const isCompleted = q.completed;
+        const color = isCompleted ? 'var(--success)' : 'var(--primary)';
+        let status = "Tracking";
+        if (isCompleted) status = "Completed";
+        else {
+            const desc = q.description.toLowerCase();
+            const socialQuests = ["friend", "pray to you", "curse you", "cookie from", "action command on you", "emote command on you"];
+            if (socialQuests.some(s => desc.includes(s))) {
+                status = "Alt Coordinated";
+            } else if (desc.includes("hunt 3 animals")) {
+                status = "Gem Optimized";
+            } else if (desc.includes("gamble")) {
+                status = "Auto Gambling";
+            }
+        }
+        const heading = index === 0 || quests[index - 1].group !== q.group
+            ? `<div style="margin-top:12px;font-weight:600">${escapeQuest(q.group)}${q.reset ? `<small style="display:block;font-weight:400">Reset: ${escapeQuest(formatTimer(q.reset))}</small>` : ''}</div>` : '';
+        return `${heading}
+            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); padding:15px; border-radius:8px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:0.9rem;">
+                    <span style="color:#eee; font-weight:500;">${escapeQuest(q.description)}</span>
+                    <span style="color:${color}; font-weight:bold;">${q.current}/${q.total}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <span style="font-size:0.65rem; color:${isCompleted ? 'var(--success)' : '#888'}; text-transform:uppercase; letter-spacing:0.8px; font-family:var(--font-mono);">${status}</span>
+                </div>
+                <div style="height:6px; background:rgba(255,255,255,0.05); border-radius:3px; overflow:hidden;">
+                    <div style="width:${percent}%; height:100%; background:${color}; box-shadow: 0 0 10px ${color}44; transition: width 0.5s ease;"></div>
+                </div>
+            </div>
+        `;
+    }).join('') + imageSections;
+}
+
+function renderLogs(logs) {
+    const t = document.getElementById('term');
+    if (!t) return;
+    const currentHash = JSON.stringify([currentAccountId, logs]);
+    if (currentHash === lastLogsHash) return;
+    lastLogsHash = currentHash;
+    const follow = !t.children.length || t.scrollHeight - t.scrollTop - t.clientHeight < 48;
+    t.innerHTML = [...logs].reverse().map(l => {
+        const tagClass = l.type ? `tag-${l.type.toLowerCase()}` : '';
+        const localTime = l.timestamp ? timeFormatter.format(new Date(l.timestamp * 1000)) : l.time;
+        const botTag = l.bot_name ? `<span style="color:magenta; margin-right:5px;">[${l.bot_name}]</span>` : '';
+        return `<div class="history-item ${l.type ? l.type.toLowerCase() : ''}">${botTag}<span class="history-time">[${localTime}]</span> <span class="history-tag ${tagClass}">${l.type}</span> <span class="history-msg">${l.message}</span></div>`;
+    }).join('');
+    if (follow) t.scrollTop = t.scrollHeight;
+}
+
+window.reloadLogs = async function(button) {
+    button.disabled = true;
+    try { await update(true); showToast('Logs reloaded', 'success'); }
+    catch (error) { showToast('Failed to reload logs', 'error'); }
+    finally { button.disabled = false; }
+};
+
+window.resumeBot = function() { 
+    console.log("Resuming bot...");
+    fetch('/api/security', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'resume', id: currentAccountId })
+    }).then(() => {
+        document.getElementById('securityAlert').style.display = 'none';
+        update();
+    });
+};
+
+window.action = async function(a, el) {
+    a = ({resume: 'start', pause: 'stop'})[a] || a;
+    const accountId = currentAccountId;
+    if (!accountId || pendingControls.has(accountId) || el?.disabled) return;
+    const status = controlStatuses.get(accountId);
+    if ((a === 'start' || a === 'stop') && (!status || status === 'OFFLINE')) return;
+    if ((a === 'start' && status === 'ONLINE') || (a === 'stop' && status === 'PAUSED')) return;
+    pendingControls.add(accountId);
+    controlRevision++;
+    syncControlButtons();
+    try {
+        const response = await fetch('/api/control', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: a, id: accountId })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.error || 'Action failed');
+        if (a === 'start' || a === 'stop') {
+            controlStatuses.set(accountId, a === 'start' ? 'ONLINE' : 'PAUSED');
+        }
+        showToast('Action sent', 'success');
+    } catch (error) {
+        showToast(error.message, 'error');
+    } finally {
+        pendingControls.delete(accountId);
+        controlRevision++;
+        syncControlButtons();
+    }
+    if (accountId === currentAccountId) {
+        try { await update(); }
+        catch (_) { showToast('Failed to refresh status', 'error'); }
+    }
+};
+
+document.addEventListener('DOMContentLoaded', syncControlButtons);

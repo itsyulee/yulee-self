@@ -391,7 +391,7 @@ function renderField(path, f, v, highlight = false, parentEnabled = true) {
         return renderRingSelection(path, v, parentEnabled);
     }
     const label = path === 'core.monitor_bot_id'
-        ? '⚠️ Monitor Bot Id (Cấm sửa nếu không biết mình đang làm gì)'
+        ? '⚠️ Monitor Bot Id (Cấm sửa nếu bị đần thì đừng động vào)'
         : formatCfgLabel(f.l);
     const hl = highlight ? ' cfg-row-highlight' : '';
     const locked = !parentEnabled && !f.master ? ' cfg-row-disabled' : '';
