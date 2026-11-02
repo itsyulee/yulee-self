@@ -233,7 +233,8 @@
     "enabled": true,
     "ignore_guilds": [],
     "join_all_guilds": false,
-    "join_chance": 100
+    "join_chance": 100,
+    "channels": []
   },
   "level_grind": {
     "enabled": true,

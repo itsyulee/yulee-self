@@ -1,4 +1,5 @@
 import asyncio
+import glob
 import json
 import os
 import random
@@ -14,21 +15,47 @@ class Boss(commands.Cog):
         self.bot = bot
         self.state_file = "data/boss_state.json"
         self._load_state()
+        self._ensure_dashboard_config_schema()
+        self._sync_config()
 
+        self.playing_guild_ids = set()
+        self._update_playing_guilds()
+
+    def _ensure_dashboard_config_schema(self):
+        """Tự động bổ sung trường 'channels': [] vào mục 'boss' trong defaults và tất cả file config/settings*.json
+        để Web Dashboard hiển thị ngay mục Channels trong phần Categories -> BOSS."""
+        if isinstance(self.bot.config.get("boss"), dict):
+            self.bot.config["boss"].setdefault("channels", [])
+
+        config_files = ["defaults/settings.json", "config/settings.json"]
+        config_files.extend(glob.glob("config/settings_*.json"))
+
+        for path in config_files:
+            if not os.path.exists(path):
+                continue
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                if isinstance(data.get("boss"), dict) and "channels" not in data["boss"]:
+                    data["boss"]["channels"] = []
+                    with open(path, "w", encoding="utf-8") as f:
+                        json.dump(data, f, indent=2, ensure_ascii=False)
+            except Exception:
+                continue
+
+    def _sync_config(self):
         boss_cfg = self.bot.config.get("boss", {})
         self.enabled = boss_cfg.get("enabled", True)
         self.join_chance = boss_cfg.get("join_chance", 100)
         self.join_all = boss_cfg.get("join_all_guilds", True)
         self.ignore_guilds = boss_cfg.get("ignore_guilds", [])
-        # Danh sách ID kênh chỉ định đánh Boss (tương thích tự động với Web Dashboard thông qua khóa "channels")
+        # Đọc danh sách kênh chỉ định từ trường "channels" trên Web Dashboard (Categories -> BOSS -> Channels)
+        raw_channels = boss_cfg.get("channels", boss_cfg.get("target_channels", []))
+        if isinstance(raw_channels, str):
+            raw_channels = [c.strip() for c in raw_channels.split(",") if c.strip()]
         self.target_channels = [
-            str(c).strip()
-            for c in boss_cfg.get("channels", boss_cfg.get("target_channels", []))
-            if str(c).strip()
+            str(c).strip() for c in (raw_channels or []) if str(c).strip()
         ]
-
-        self.playing_guild_ids = set()
-        self._update_playing_guilds()
 
     def _update_playing_guilds(self):
         self.playing_guild_ids.clear()
@@ -44,16 +71,8 @@ class Boss(commands.Cog):
             self.playing_guild_ids.add(str(self.bot.guild_id))
 
     def register_actions(self):
-        boss_cfg = self.bot.config.get("boss", {})
-        self.enabled = boss_cfg.get("enabled", True)
-        self.join_chance = boss_cfg.get("join_chance", 100)
-        self.join_all = boss_cfg.get("join_all_guilds", True)
-        self.ignore_guilds = boss_cfg.get("ignore_guilds", [])
-        self.target_channels = [
-            str(c).strip()
-            for c in boss_cfg.get("channels", boss_cfg.get("target_channels", []))
-            if str(c).strip()
-        ]
+        self._ensure_dashboard_config_schema()
+        self._sync_config()
         self._update_playing_guilds()
         if self.target_channels:
             self.bot.log(
@@ -126,6 +145,8 @@ class Boss(commands.Cog):
 
     @commands.Cog.listener()
     async def on_socket_raw_receive(self, msg):
+        # Đồng bộ lại cấu hình mới nhất từ bộ nhớ (khi người dùng bấm Save trên Web Dashboard)
+        self._sync_config()
         if not self.enabled or self.bot.paused:
             return
 
@@ -168,11 +189,11 @@ class Boss(commands.Cog):
         # 2. Kiểm tra điều kiện kênh / server được phép tham gia
         can_join = False
         if self.target_channels:
-            # Nếu người dùng đã chỉ định danh sách kênh đánh Boss -> CHỈ đánh tại các kênh này
+            # Nếu trong Categories -> BOSS -> Channels có thêm ID kênh -> CHỈ đánh ở các kênh đó
             if str(channel_id) in self.target_channels:
                 can_join = True
         else:
-            # Nếu danh sách kênh chỉ định để trống -> giữ nguyên cơ chế mặc định
+            # Nếu để trống Channels (No items added) -> hoạt động theo cấu hình mặc định
             if self.join_all:
                 can_join = True
             else:

@@ -337,7 +337,9 @@ def settings():
             if os.path.exists(config_path):
                 with open(config_path, 'r') as f:
                     data = json.load(f)
-                    return jsonify(protect_large_ints(data))
+                    if isinstance(data.get('boss'), dict):
+                data['boss'].setdefault('channels', [])
+            return jsonify(protect_large_ints(data))
 
             elif account_id:
                 global_path = os.path.join(state.CONFIG_DIR, 'settings.json')
