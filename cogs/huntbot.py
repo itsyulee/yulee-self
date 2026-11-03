@@ -79,8 +79,10 @@ class HuntBot(commands.Cog):
         if message.channel.id != self.bot.channel_id:
             return
 
-        # Record exact timestamp when our own huntbot/ohb command is sent in the channel
+        # Learn our own guild nickname/display name and record exact timestamp when we send a command
         if self.bot.user and message.author.id == self.bot.user.id:
+            if hasattr(self.bot, 'identity') and hasattr(self.bot.identity, 'learn_author_identity'):
+                self.bot.identity.learn_author_identity(message.author)
             own_content = (message.content or "").lower().strip()
             prefix = self.bot.prefix.lower().strip()
             if own_content.startswith(prefix):
@@ -103,30 +105,19 @@ class HuntBot(commands.Cog):
             content += " " + self.bot.get_full_content(message)
         content_lower = content.lower()
         
+        # Strict per-account check: never override is_for_me with time-based guessing,
+        # otherwise multiple accounts in the same channel will react to each other's password/timers!
         is_for_me = self.bot.is_message_for_me(message)
-        
-        generic_huntbot_patterns = [
-            "i will be back in",
-            "i am back with",
-            "beep boop. i am back with",
-            "here is your password",
-            "please include your password",
-            "wrong password",
-            "incorrect password",
-            "you spent",
-        ]
-        if not is_for_me and any(p in content_lower for p in generic_huntbot_patterns):
-            if hasattr(self, 'last_command_time') and (time.time() - self.last_command_time < 90):
-                is_for_me = True
-
         if not is_for_me:
-            if "successfully upgraded" in content_lower and "animal essence" in content_lower:
-                amt_match = re.search(r"with\s+\*\*?([\d,]+)\*\*? Animal Essence", content, re.IGNORECASE)
-                if amt_match:
-                    amt = int(amt_match.group(1).replace(",", ""))
-                    self.bot.log("SUCCESS", f"HuntBot: Upgrade confirmed for {amt:,} essence.")
-                    self.last_upgrade_essence = amt
-                    self.last_upgrade_time = time.time()
+            return
+
+        if "successfully upgraded" in content_lower and "animal essence" in content_lower:
+            amt_match = re.search(r"with\s+\*\*?([\d,]+)\*\*? Animal Essence", content, re.IGNORECASE)
+            if amt_match:
+                amt = int(amt_match.group(1).replace(",", ""))
+                self.bot.log("SUCCESS", f"HuntBot: Upgrade confirmed for {amt:,} essence.")
+                self.last_upgrade_essence = amt
+                self.last_upgrade_time = time.time()
             return
 
         if cfg.get('upgrade', {}).get('enabled', False) and message.embeds:

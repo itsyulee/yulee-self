@@ -24,11 +24,8 @@ class IdentityManager:
         self.bot = bot
         self.generic_patterns = [
             "are you a real human", "complete your captcha",
-            "verify that you are human", "please use the link below",
-            "beep boop", "i am back with", "i will be back in",
-            "please include your password", "here is your password",
-            "wrong password", "incorrect password"
-        ] # these owo mssgs does not contain our name , and some for security 
+            "verify that you are human", "please use the link below"
+        ] # security messages that may not contain our name in DMs
 
     def clean_text(self, text):
         if not text: return ""
@@ -37,6 +34,47 @@ class IdentityManager:
         clean = clean.replace('\u200b', '').replace('\u200c', '').replace('\u200d', '').replace('\ufeff', '')
         return clean.lower().strip()
 
+    def learn_author_identity(self, author):
+        """Learn guild nickname / display_name from our own sent messages."""
+        if not author or not getattr(self.bot, 'user', None):
+            return
+        if getattr(author, 'id', None) != self.bot.user.id:
+            return
+        if not hasattr(self.bot, 'identifiers') or self.bot.identifiers is None:
+            self.bot.identifiers = []
+        for attr in ('name', 'display_name', 'global_name', 'nick'):
+            val = getattr(author, attr, None)
+            if val and isinstance(val, str):
+                low = val.lower().strip()
+                if low and low not in self.bot.identifiers:
+                    self.bot.identifiers.append(low)
+
+    def _build_idents(self, message=None):
+        global_name = getattr(self.bot.user, 'global_name', None)
+        user_disp = getattr(self.bot.user, 'display_name', None)
+        idents = [self.bot.user.name, self.bot.display_name, user_disp, global_name] + getattr(self.bot, 'identifiers', [])
+        if message and getattr(message, 'guild', None):
+            member = message.guild.get_member(self.bot.user.id) or getattr(message.guild, 'me', None)
+            if member:
+                idents.extend([getattr(member, 'nick', None), getattr(member, 'display_name', None)])
+
+        clean_idents = set()
+        raw_idents = set()
+        for i in idents:
+            if not i or not isinstance(i, str) or i.startswith("<@"):
+                continue
+            norm_i = self.clean_text(i)
+            if not norm_i:
+                continue
+            ci = re.sub(r'[^\w\s]', '', norm_i).strip()
+            ci = re.sub(r'\s+', ' ', ci)
+            if ci and len(ci) >= 2:
+                clean_idents.add(ci)
+            ri = re.sub(r'[*_`~|<>]', '', norm_i).strip()
+            if ri and len(ri) >= 2:
+                raw_idents.add(ri)
+        return clean_idents, raw_idents
+
     def is_message_for_me(self, message, role="any", keyword=None):
         if not message:
             return False
@@ -44,25 +82,7 @@ class IdentityManager:
         if self.bot.user.mentioned_in(message): 
             return True
 
-        global_name = getattr(self.bot.user, 'global_name', None)
-        idents = [self.bot.user.name, self.bot.display_name, global_name] + getattr(self.bot, 'identifiers', [])
-        clean_idents = set()
-        for i in idents:
-            if not i:
-                continue
-            norm_i = self.clean_text(i)
-            ci = re.sub(r'[^\w\s]', '', norm_i).strip()
-            if ci and len(ci) >= 2:
-                clean_idents.add(ci)
-            
-        if message.guild:
-            member = message.guild.get_member(self.bot.user.id) or getattr(message.guild, 'me', None)
-            if member:
-                for m_name in (getattr(member, 'nick', None), getattr(member, 'display_name', None)):
-                    if m_name:
-                        clean_nick = re.sub(r'[^\w\s]', '', self.clean_text(m_name)).strip()
-                        if clean_nick and len(clean_nick) >= 2:
-                            clean_idents.add(clean_nick)
+        clean_idents, raw_idents = self._build_idents(message)
 
         content = self.clean_text(message.content)
         if role == "header":
@@ -77,10 +97,13 @@ class IdentityManager:
                     if em.description:
                         header_texts.append(self.clean_text(em.description.split('\n')[0]))
             
-            for text in header_texts:
-                text = re.sub(r'[^\w\s]', '', text).strip()
+            for raw_hdr in header_texts:
+                for r_ident in raw_idents:
+                    if r_ident in raw_hdr:
+                        return True
+                text = re.sub(r'\s+', ' ', re.sub(r'[^\w\s]', '', raw_hdr)).strip()
                 for ident in clean_idents:
-                    if re.search(rf"\b{re.escape(ident)}(?:'s)?\b", text):
+                    if re.search(rf"\b{re.escape(ident)}(?:s)?\b", text):
                         return True
             return False
 
@@ -89,8 +112,12 @@ class IdentityManager:
             if keyword in content:
                 parts = content.split(keyword, 1)
                 check_text = parts[0] if role == "source" else parts[1]
+                check_clean = re.sub(r'\s+', ' ', re.sub(r'[^\w\s]', '', check_text)).strip()
                 for ident in clean_idents:
-                    if re.search(rf"\b{re.escape(ident)}\b", check_text):
+                    if re.search(rf"\b{re.escape(ident)}\b", check_clean):
+                        return True
+                for r_ident in raw_idents:
+                    if r_ident in check_text:
                         return True
             return False
 
@@ -102,10 +129,14 @@ class IdentityManager:
                 texts.append(self.clean_text(raw_embed_text))
 
         for text in texts:
+            text_clean = re.sub(r'\s+', ' ', re.sub(r'[^\w\s]', '', text)).strip()
             for ident in clean_idents:
-                if re.search(rf"\b{re.escape(ident)}\b", text, re.I):
+                if re.search(rf"\b{re.escape(ident)}\b", text_clean, re.I):
                     return True
-                if ident in text and len(ident) > 3:
+                if ident in text_clean and len(ident) > 3:
+                    return True
+            for r_ident in raw_idents:
+                if r_ident in text and len(r_ident) >= 2:
                     return True
 
         full_visible_text = " ".join(texts)
