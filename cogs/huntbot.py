@@ -34,10 +34,11 @@ class HuntBot(commands.Cog):
         self.pending_retry_delay = 60
         self.task = None
         self.password_reset_regex = r"(?<=Password will reset in )(\d+)"
-        self.huntbot_time_regex = r"(\d+)([DHM])"
+        self.huntbot_time_regex = r"(\d+)\s*([DHMS])\b"
         self.last_upgrade_essence = 0
         self.last_upgrade_time = 0.0
         self.last_command_time = 0.0
+        self.last_sync_time = 0.0
         self.awaiting_password = False
 
     def trigger_action(self):
@@ -47,8 +48,9 @@ class HuntBot(commands.Cog):
         self.awaiting_password = True
         if 'huntbot' in self.bot.cmd_states:
             self.bot.cmd_states['huntbot']['content'] = f"huntbot {amount}"
-            # Keep a short retry delay until OwO actually confirms hunt duration or password state
-            self.bot.cmd_states['huntbot']['delay'] = self.pending_retry_delay
+            # Only set short retry delay if we haven't just synced a real timer from OwO
+            if time.time() - self.last_sync_time > 5.0:
+                self.bot.cmd_states['huntbot']['delay'] = self.pending_retry_delay
         
         self.last_command_time = time.time()
         self.last_check = time.time()
@@ -66,6 +68,34 @@ class HuntBot(commands.Cog):
                 delay=self.check_interval,
                 initial_offset=20
             )
+
+    def _is_nameless_response_for_me(self, channel_id):
+        """
+        OwO's 'BEEP BOOP. I AM STILL HUNTING. I WILL BE BACK IN ...' and 'I AM BACK WITH ...'
+        messages do NOT contain any username. Match them to the account that most recently
+        sent a huntbot command in this channel within the last 60 seconds.
+        """
+        now = time.time()
+        my_cmd_time = getattr(self, 'last_command_time', 0.0)
+        if my_cmd_time <= 0 or (now - my_cmd_time) > 60.0:
+            return False
+
+        best_bot_id = getattr(self.bot, 'user_id', None) or (str(self.bot.user.id) if self.bot.user else None)
+        best_time = my_cmd_time
+
+        for other_bot in getattr(state, 'bot_instances', []):
+            if not other_bot or getattr(other_bot, 'channel_id', None) != channel_id:
+                continue
+            other_cog = other_bot.get_cog("HuntBot") if hasattr(other_bot, 'get_cog') else None
+            if not other_cog:
+                continue
+            other_time = getattr(other_cog, 'last_command_time', 0.0)
+            if other_time > best_time and (now - other_time) <= 60.0:
+                best_time = other_time
+                best_bot_id = getattr(other_bot, 'user_id', None) or (str(other_bot.user.id) if other_bot.user else None)
+
+        my_id = getattr(self.bot, 'user_id', None) or (str(self.bot.user.id) if self.bot.user else None)
+        return best_bot_id == my_id
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -105,9 +135,24 @@ class HuntBot(commands.Cog):
             content += " " + self.bot.get_full_content(message)
         content_lower = content.lower()
         
-        # Strict per-account check: never override is_for_me with time-based guessing,
-        # otherwise multiple accounts in the same channel will react to each other's password/timers!
         is_for_me = self.bot.is_message_for_me(message)
+
+        # Nameless HuntBot status messages (e.g. "BEEP BOOP. I AM STILL HUNTING. I WILL BE BACK IN 2H 34M")
+        # do NOT contain the user's name, whereas "Here is your password!" ALWAYS contains the user's name.
+        nameless_huntbot_patterns = [
+            "i will be back in",
+            "i am still hunting",
+            "i am back with",
+            "beep boop",
+            "please include your password",
+            "wrong password",
+            "incorrect password",
+        ]
+        if not is_for_me and "here is your password" not in content_lower:
+            if any(p in content_lower for p in nameless_huntbot_patterns):
+                if self._is_nameless_response_for_me(message.channel.id):
+                    is_for_me = True
+
         if not is_for_me:
             return
 
@@ -191,28 +236,33 @@ class HuntBot(commands.Cog):
                 break  
 
         if "i will be back in" in content_lower:
+            after_back = content.upper().split("I WILL BE BACK IN", 1)[-1]
             total_seconds = 0
             found = False
-            for amount, unit in re.findall(self.huntbot_time_regex, content.upper()):
+            for amount, unit in re.findall(self.huntbot_time_regex, after_back):
                 found = True
-                if unit == "M": total_seconds += int(amount) * 60
+                if unit == "S": total_seconds += int(amount)
+                elif unit == "M": total_seconds += int(amount) * 60
                 elif unit == "H": total_seconds += int(amount) * 3600
                 elif unit == "D": total_seconds += int(amount) * 86400
             
             if found:
                 self.awaiting_password = False
+                self.last_command_time = 0.0
+                self.last_sync_time = time.time()
                 self.check_interval = total_seconds + 30
                 self.last_check = time.time()
                 if 'huntbot' in self.bot.cmd_states:
                     self.bot.cmd_states['huntbot']['delay'] = self.check_interval
                     self.bot.cmd_states['huntbot']['last_ran'] = time.time()
                 self.bot.is_busy = False
-                self.bot.log("AutoHunt", f"HuntBot active. Next check in {round(total_seconds/60)}m")
+                self.bot.log("AutoHunt", f"HuntBot busy. Resyncing for {round(total_seconds/60)}m")
 
         elif "i am back with" in content_lower or "beep boop. i am back with" in content_lower:
             rewards = content.split('back with')[-1].strip().upper() if 'back with' in content_lower else "UNKNOWN REWARDS"
             self.bot.log("AutoHunt", f"HuntBot returned! Rewards: {rewards[:100]}")
             self.awaiting_password = False
+            self.last_sync_time = time.time()
             self.check_interval = 900
             self.last_check = time.time() - 20
             if 'huntbot' in self.bot.cmd_states:
@@ -226,6 +276,8 @@ class HuntBot(commands.Cog):
             wait_s = minutes * 60
             self.bot.log("AutoHunt", f"HuntBot stuck (password required). Reset in {minutes}m.")
             self.awaiting_password = False
+            self.last_command_time = 0.0
+            self.last_sync_time = time.time()
             self.check_interval = wait_s + 30
             self.last_check = time.time()
             if 'huntbot' in self.bot.cmd_states:
@@ -285,6 +337,8 @@ class HuntBot(commands.Cog):
         elif "wrong password" in content_lower or "incorrect password" in content_lower:
             self.bot.log("AutoHunt", "Wrong password provided. Waiting for reset.")
             self.awaiting_password = False
+            self.last_command_time = 0.0
+            self.last_sync_time = time.time()
             self.check_interval = 630
             self.last_check = time.time()
             if 'huntbot' in self.bot.cmd_states:
