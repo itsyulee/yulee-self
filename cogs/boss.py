@@ -113,6 +113,7 @@ class Boss(commands.Cog):
     async def register_actions(self):
         self.state_file = self._get_state_file()
         self._load_state()
+        self._check_reset()
         self._ensure_dashboard_config_schema()
         self._sync_config()
         await self._subscribe_target_channels()
@@ -135,19 +136,24 @@ class Boss(commands.Cog):
         self.last_reset = 0
         self.joined_ids = set()
 
+        # Chỉ đọc file boss_state_<uid>.json riêng của tài khoản, KHÔNG fallback sang boss_state.json chung
+        # bị dính timestamp ảo 1791952100 và tickets=0 từ source gốc
         path = self.state_file
-        if not os.path.exists(path):
-            legacy = os.path.join(state.DATA_DIR, "boss_state.json")
-            if os.path.exists(legacy):
-                path = legacy
-
         if os.path.exists(path):
             try:
                 with open(path, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    self.tickets = data.get("tickets", 3)
-                    self.last_reset = data.get("last_reset", 0)
-                    self.joined_ids = set(data.get("joined_ids", []))
+                    last_reset = float(data.get("last_reset", 0) or 0)
+                    now = time.time()
+                    # Nếu file lưu timestamp tương lai bất thường (> now + 60) thì reset lại 3 vé
+                    if last_reset > now + 60:
+                        self.tickets = 3
+                        self.last_reset = now
+                        self.joined_ids = set()
+                    else:
+                        self.tickets = int(data.get("tickets", 3))
+                        self.last_reset = last_reset
+                        self.joined_ids = set(data.get("joined_ids", []))
             except Exception:
                 pass
 
@@ -170,7 +176,8 @@ class Boss(commands.Cog):
 
     def _check_reset(self):
         now = time.time()
-        if self.last_reset > 0 and now - self.last_reset >= 72000:
+        # Nếu last_reset bị lệch sang tương lai hoặc đã qua 20 giờ (72000s) -> reset lại 3 vé
+        if self.last_reset > now + 60 or (self.last_reset > 0 and now - self.last_reset >= 72000):
             self.tickets = 3
             self.last_reset = now
             self.joined_ids.clear()
@@ -178,6 +185,67 @@ class Boss(commands.Cog):
         elif self.last_reset == 0:
             self.last_reset = now
             self._save_state()
+
+    def _sync_tickets_from_text(self, text, is_for_me=False):
+        """Trích xuất số vé boss (VD: 'you currently have 2/3 boss tickets!' hoặc 'ran out of boss tickets')
+        và thời gian hồi vé (<t:TIMESTAMP:R>) từ cả embed, content hoặc V2 component."""
+        low = (text or "").lower()
+        if "boss ticket" not in low:
+            return False
+
+        if not is_for_me:
+            clean_txt = self.bot.identity.clean_text(text) if hasattr(self.bot, "identity") else low
+            clean_idents, raw_idents = (
+                self.bot.identity._build_idents()
+                if hasattr(self.bot, "identity")
+                else (set(), set())
+            )
+            uid = str(getattr(self.bot, "user_id", "") or (self.bot.user.id if getattr(self.bot, "user", None) else ""))
+            if uid and (f"<@{uid}>" in low or f"<@!{uid}>" in low):
+                is_for_me = True
+            else:
+                for r_id in raw_idents:
+                    if r_id and r_id in clean_txt:
+                        is_for_me = True
+                        break
+                if not is_for_me:
+                    text_alnum = re.sub(r"\s+", " ", re.sub(r"[^\w\s]", "", clean_txt)).strip()
+                    for c_id in clean_idents:
+                        if c_id and (c_id in text_alnum):
+                            is_for_me = True
+                            break
+
+        if not is_for_me:
+            return False
+
+        # Kiểm tra nếu trong tin nhắn có timestamp hồi vé của Discord: Replenishes <t:1730000000:R>
+        ts_match = re.search(r"<t:(\d+)(?::[a-zA-Z])?>", text or "")
+        now = time.time()
+
+        match = re.search(r"(\d+)\s*/\s*3\s*boss\s*ticket", low)
+        if match:
+            new_tickets = int(match.group(1))
+            self.tickets = new_tickets
+            if ts_match:
+                replenish_at = int(ts_match.group(1))
+                # _check_reset cộng 72000s từ last_reset, nên đặt last_reset = replenish_at - 72000
+                self.last_reset = max(0, replenish_at - 72000)
+            else:
+                self.last_reset = now
+            self._save_state()
+            self.bot.log("BOSS", f"Synced boss tickets: {self.tickets}/3")
+            return True
+        elif "ran out of boss tickets" in low or "don't have any boss tickets" in low or "no boss tickets" in low:
+            self.tickets = 0
+            if ts_match:
+                replenish_at = int(ts_match.group(1))
+                self.last_reset = max(0, replenish_at - 72000)
+            else:
+                self.last_reset = now
+            self._save_state()
+            self.bot.log("BOSS", "Synced boss tickets: 0/3 (Out of tickets)")
+            return True
+        return False
 
     def get_dashboard_status(self):
         self._check_reset()
@@ -196,38 +264,17 @@ class Boss(commands.Cog):
     async def on_message(self, message):
         if str(message.author.id) != str(self.bot.owo_bot_id):
             return
-        allowed_channels = (
-            {str(self.bot.channel_id)}
-            | {str(c) for c in getattr(self.bot, "channels", [])}
-            | set(self.target_channels)
-        )
-        if not self.join_all and str(message.channel.id) not in allowed_channels:
-            return
-        if not self.bot.is_message_for_me(message):
-            return
 
-        full_content = self.bot.get_full_content(message).lower()
-
-        if "boss ticket" in full_content:
-            match = re.search(r"(\d+)/3 boss ticket", full_content)
-            if match:
-                self.tickets = int(match.group(1))
-                self.last_reset = time.time()
-                self._save_state()
-                self.bot.log("BOSS", f"Synced boss tickets: {self.tickets}/3")
-            elif "ran out of boss tickets" in full_content:
-                self.tickets = 0
-                self.last_reset = time.time()
-                self._save_state()
-                self.bot.log("BOSS", "Synced boss tickets: 0/3 (Out of tickets)")
+        # Cho phép bắt lệnh `o boss t` hoặc thông báo vé boss ở bất kỳ kênh nào khi người dùng gõ kiểm tra
+        full_content = self.bot.get_full_content(message)
+        if "boss ticket" in full_content.lower():
+            is_mine = self.bot.is_message_for_me(message)
+            self._sync_tickets_from_text(full_content, is_for_me=is_mine)
 
     @commands.Cog.listener()
     async def on_socket_raw_receive(self, msg):
         # Đồng bộ lại cấu hình mới nhất từ bộ nhớ (khi người dùng bấm Save trên Web Dashboard)
         self._sync_config()
-        if not self.enabled or self.bot.paused:
-            return
-
         if isinstance(msg, bytes):
             return
 
@@ -244,34 +291,28 @@ class Boss(commands.Cog):
             return
 
         components = parse_v2_message(data)
-        if not components:
-            return
-
         v2_text = " ".join(
-            getattr(c, "content", "") or "" for c in components
-        ).lower()
-        msg_content = (data.get("content") or "").lower()
-        combined_text = f"{msg_content} {v2_text}"
+            getattr(c, "content", "") or "" for c in (components or [])
+        )
+        msg_content = data.get("content") or ""
+        embed_parts = []
+        for em in data.get("embeds") or []:
+            embed_parts.extend([
+                em.get("title") or "",
+                (em.get("author") or {}).get("name") or "",
+                em.get("description") or "",
+            ])
+            for fld in em.get("fields") or []:
+                embed_parts.extend([fld.get("name") or "", fld.get("value") or ""])
+        combined_raw = " ".join([msg_content, v2_text] + embed_parts)
+        combined_text = combined_raw.lower()
 
-        # Đồng bộ vé boss ngay trên raw V2 message nếu OwO báo hết vé / số vé của mình
+        # Luôn đồng bộ vé boss ngay khi người dùng gõ `o boss t` hoặc khi OwO phản hồi vé boss (kể cả ở kênh bất kỳ)
         if "boss ticket" in combined_text:
-            my_names = [
-                getattr(self.bot, "username", "").lower(),
-                getattr(self.bot, "display_name", "").lower(),
-                f"<@{getattr(self.bot, 'user_id', '')}>",
-            ]
-            if any(n and n in combined_text for n in my_names):
-                match = re.search(r"(\d+)/3 boss ticket", combined_text)
-                if match:
-                    self.tickets = int(match.group(1))
-                    self.last_reset = time.time()
-                    self._save_state()
-                    self.bot.log("BOSS", f"Synced boss tickets: {self.tickets}/3")
-                elif "ran out of boss tickets" in combined_text:
-                    self.tickets = 0
-                    self.last_reset = time.time()
-                    self._save_state()
-                    self.bot.log("BOSS", "Synced boss tickets: 0/3 (Out of tickets)")
+            self._sync_tickets_from_text(combined_raw, is_for_me=False)
+
+        if not self.enabled or self.bot.paused or not components:
+            return
 
         fight_btn = next(
             (

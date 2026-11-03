@@ -221,7 +221,9 @@ class YuleeBot(commands.Bot):
         for cog in self.cogs.values():
             if hasattr(cog, 'register_actions'):
                 try:
-                    await cog.register_actions()
+                    res = cog.register_actions()
+                    if asyncio.iscoroutine(res):
+                        await res
                 except Exception as e:
                     self.log("ERROR", f"Failed to register {type(cog).__name__} actions: {e}")
 
@@ -506,7 +508,9 @@ class YuleeBot(commands.Bot):
                 name = type(cog).__name__
                 if name in cogs_to_refresh and hasattr(cog, "register_actions"):
                     try:
-                        await cog.register_actions()
+                        res = cog.register_actions()
+                        if asyncio.iscoroutine(res):
+                            await res
                     except Exception as e:
                         self.log("ERROR", f"Failed to refresh {name}: {e}")
             self.log("SYS", f"Settings updated ({len(changed)} change(s)). Scheduler modules refreshed: {', '.join(sorted(cogs_to_refresh)) or 'none'}")
@@ -515,7 +519,9 @@ class YuleeBot(commands.Bot):
                 name = type(cog).__name__
                 if name in cogs_to_refresh and hasattr(cog, "register_actions"):
                     try:
-                        await cog.register_actions()
+                        res = cog.register_actions()
+                        if asyncio.iscoroutine(res):
+                            await res
                     except Exception as e:
                         self.log("ERROR", f"Failed to refresh {name}: {e}")
             self.log("SYS", f"Settings updated ({len(changed)} change(s), no scheduler restart).")

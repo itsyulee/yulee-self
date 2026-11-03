@@ -106,13 +106,13 @@ function update(forceLogs = false) {
             lineChart.update('none');
         }
         try { renderQuests(d.quest_data, d.next_quest_timer, d); } catch(e) { console.error("Quest Render Error:", e); }
-        try { if (d.cmd_states) renderScheduler(d.cmd_states); } catch(e) { console.error("Scheduler Render Error in update():", e); }
+        try { if (d.cmd_states) renderScheduler(d.cmd_states, d.boss_status); } catch(e) { console.error("Scheduler Render Error in update():", e); }
         try { fetchSecuritySummary(); } catch(e) { console.error("Security Summary Error:", e); }
     });
 }
 
 
-function renderScheduler(states) {
+function renderScheduler(states, bossStatus = null) {
     const list = document.getElementById('schedulerList');
     if (!list) return;
     try {
@@ -123,12 +123,25 @@ function renderScheduler(states) {
                 const delay = s.delay || 1;
                 const nextRun = lastRan + delay;
                 const remaining = Math.max(0, nextRun - now);
-                return { id, priority: s.priority || 3, delay: delay, in_queue: !!s.in_queue, remaining };
+                return {
+                    id,
+                    priority: s.priority || 3,
+                    delay: delay,
+                    in_queue: !!s.in_queue,
+                    remaining,
+                    is_boss: !!s.is_boss,
+                    tickets: s.tickets,
+                    max_tickets: s.max_tickets || 3,
+                    channels: s.channels || []
+                };
             } catch(e) {
                 return null;
             }
         }).filter(item => item !== null);
-        items.sort((a, b) => (a.remaining || 0) - (b.remaining || 0));
+        items.sort((a, b) => {
+            if (a.is_boss !== b.is_boss) return a.is_boss ? -1 : 1;
+            return (a.remaining || 0) - (b.remaining || 0);
+        });
         if (items.length === 0) {
             list.innerHTML = '<div style="color:#666; font-style:italic; font-size:0.9rem; text-align:center; padding-top:20px;">No scheduled actions</div>';
             return;
@@ -137,7 +150,16 @@ function renderScheduler(states) {
             const name = item.id.toUpperCase();
             let statusHtml = '';
             let progress = 0;
-            if (item.in_queue) {
+            if (item.is_boss) {
+                const tLeft = item.tickets ?? 3;
+                const tMax = item.max_tickets ?? 3;
+                progress = Math.min(100, Math.max(0, (tLeft / tMax) * 100));
+                if (tLeft > 0) {
+                    statusHtml = `<span style="color:var(--success); font-size:0.8rem; font-weight:bold;"><span class="icon-svg" style="--icon: url('/static/assets/yulee_icons/sync.svg'); animation: spin 2s linear infinite;"></span> ACTIVE (${tLeft}/${tMax})</span>`;
+                } else {
+                    statusHtml = `<span style="color:#aaa; font-family:var(--font-mono); font-size:0.8rem;">0/${tMax} Vé</span>`;
+                }
+            } else if (item.in_queue) {
                 statusHtml = `<span style="color:var(--success); font-size:0.8rem; font-weight:bold;"><span class="icon-svg" style="--icon: url('/static/assets/yulee_icons/sync.svg'); animation: spin 2s linear infinite;"></span> QUEUED</span>`;
                 progress = 100;
             } else {
