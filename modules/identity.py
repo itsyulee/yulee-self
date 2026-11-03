@@ -26,11 +26,13 @@ class IdentityManager:
             "are you a real human", "complete your captcha",
             "verify that you are human", "please use the link below",
             "beep boop", "i am back with", "i will be back in",
-            "please include your password"
+            "please include your password", "here is your password",
+            "wrong password", "incorrect password"
         ] # these owo mssgs does not contain our name , and some for security 
 
     def clean_text(self, text):
         if not text: return ""
+        text = unicodedata.normalize("NFKC", text)
         clean = "".join(ch for ch in text if unicodedata.category(ch)[0] != 'C')
         clean = clean.replace('\u200b', '').replace('\u200c', '').replace('\u200d', '').replace('\ufeff', '')
         return clean.lower().strip()
@@ -42,20 +44,25 @@ class IdentityManager:
         if self.bot.user.mentioned_in(message): 
             return True
 
-        idents = [self.bot.user.name, self.bot.display_name] + getattr(self.bot, 'identifiers', [])
+        global_name = getattr(self.bot.user, 'global_name', None)
+        idents = [self.bot.user.name, self.bot.display_name, global_name] + getattr(self.bot, 'identifiers', [])
         clean_idents = set()
         for i in idents:
-            ci = re.sub(r'[^\w\s]', '', i.lower()).strip()
+            if not i:
+                continue
+            norm_i = self.clean_text(i)
+            ci = re.sub(r'[^\w\s]', '', norm_i).strip()
             if ci and len(ci) >= 2:
                 clean_idents.add(ci)
             
         if message.guild:
-            member = message.guild.get_member(self.bot.user.id)
-            if member and member.nick:
-                nick = member.nick.lower()
-                clean_nick = re.sub(r'[^\w\s]', '', nick).strip()
-                if clean_nick:
-                    clean_idents.add(clean_nick)
+            member = message.guild.get_member(self.bot.user.id) or getattr(message.guild, 'me', None)
+            if member:
+                for m_name in (getattr(member, 'nick', None), getattr(member, 'display_name', None)):
+                    if m_name:
+                        clean_nick = re.sub(r'[^\w\s]', '', self.clean_text(m_name)).strip()
+                        if clean_nick and len(clean_nick) >= 2:
+                            clean_idents.add(clean_nick)
 
         content = self.clean_text(message.content)
         if role == "header":
@@ -78,7 +85,7 @@ class IdentityManager:
             return False
 
         if role in ["source", "target"] and keyword:
-            keyword = keyword.lower()
+            keyword = self.clean_text(keyword)
             if keyword in content:
                 parts = content.split(keyword, 1)
                 check_text = parts[0] if role == "source" else parts[1]
@@ -111,4 +118,3 @@ class IdentityManager:
             return False
 
         return False
-

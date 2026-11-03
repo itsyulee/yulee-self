@@ -31,19 +31,24 @@ class HuntBot(commands.Cog):
         self.active = True
         self.last_check = 0.0
         self.check_interval = 900
+        self.pending_retry_delay = 60
         self.task = None
         self.password_reset_regex = r"(?<=Password will reset in )(\d+)"
         self.huntbot_time_regex = r"(\d+)([DHM])"
         self.last_upgrade_essence = 0
         self.last_upgrade_time = 0.0
+        self.last_command_time = 0.0
+        self.awaiting_password = False
 
     def trigger_action(self):
         cfg = self.bot.config.get('commands', {}).get('huntbot', {})
         amount = cfg.get('cash_to_spend', 16000)
         
+        self.awaiting_password = True
         if 'huntbot' in self.bot.cmd_states:
             self.bot.cmd_states['huntbot']['content'] = f"huntbot {amount}"
-            self.bot.cmd_states['huntbot']['delay'] = self.check_interval
+            # Keep a short retry delay until OwO actually confirms hunt duration or password state
+            self.bot.cmd_states['huntbot']['delay'] = self.pending_retry_delay
         
         self.last_command_time = time.time()
         self.last_check = time.time()
@@ -52,9 +57,15 @@ class HuntBot(commands.Cog):
     async def register_actions(self):
         cfg = self.bot.config.get('commands', {}).get('huntbot', {})
         if cfg.get('enabled', False):
+            amount = cfg.get('cash_to_spend', 16000)
             self.bot.log("SYS", "HuntBot Module configured.")
-            await self.bot.yulee_register_command("huntbot", "huntbot 16000", priority=self.bot.get_cmd_priority("huntbot", 4), delay=900, initial_offset=20)
-            self.trigger_action()
+            await self.bot.yulee_register_command(
+                "huntbot",
+                f"huntbot {amount}",
+                priority=self.bot.get_cmd_priority("huntbot", 4),
+                delay=self.check_interval,
+                initial_offset=20
+            )
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -65,9 +76,25 @@ class HuntBot(commands.Cog):
         await self._process_message(after)
 
     async def _process_message(self, message):
+        if message.channel.id != self.bot.channel_id:
+            return
+
+        # Record exact timestamp when our own huntbot/ohb command is sent in the channel
+        if self.bot.user and message.author.id == self.bot.user.id:
+            own_content = (message.content or "").lower().strip()
+            prefix = self.bot.prefix.lower().strip()
+            if own_content.startswith(prefix):
+                cmd_body = own_content[len(prefix):].strip()
+                if cmd_body.startswith(("hb", "huntbot", "autohunt")):
+                    self.last_command_time = time.time()
+            return
+
+        monitor_id = str(self.bot.config.get('core', {}).get('monitor_bot_id', '408785106942164992'))
+        if str(message.author.id) != monitor_id:
+            return
+
         if self.bot.owo_user is None:
             self.bot.owo_user = message.author
-        if message.channel.id != self.bot.channel_id: return
         
         cfg = self.bot.config.get('commands', {}).get('huntbot', {})
         
@@ -78,9 +105,18 @@ class HuntBot(commands.Cog):
         
         is_for_me = self.bot.is_message_for_me(message)
         
-        generic_huntbot_patterns = ["i will be back in", "i am back with", "beep boop. i am back with"]
+        generic_huntbot_patterns = [
+            "i will be back in",
+            "i am back with",
+            "beep boop. i am back with",
+            "here is your password",
+            "please include your password",
+            "wrong password",
+            "incorrect password",
+            "you spent",
+        ]
         if not is_for_me and any(p in content_lower for p in generic_huntbot_patterns):
-            if hasattr(self, 'last_command_time') and (time.time() - self.last_command_time < 45):
+            if hasattr(self, 'last_command_time') and (time.time() - self.last_command_time < 90):
                 is_for_me = True
 
         if not is_for_me:
@@ -173,17 +209,19 @@ class HuntBot(commands.Cog):
                 elif unit == "D": total_seconds += int(amount) * 86400
             
             if found:
+                self.awaiting_password = False
                 self.check_interval = total_seconds + 30
                 self.last_check = time.time()
                 if 'huntbot' in self.bot.cmd_states:
                     self.bot.cmd_states['huntbot']['delay'] = self.check_interval
                     self.bot.cmd_states['huntbot']['last_ran'] = time.time()
                 self.bot.is_busy = False
-                self.bot.log("AutoHunt", f"HuntBot busy. Resyncing for {round(total_seconds/60)}m")
+                self.bot.log("AutoHunt", f"HuntBot active. Next check in {round(total_seconds/60)}m")
 
         elif "i am back with" in content_lower or "beep boop. i am back with" in content_lower:
             rewards = content.split('back with')[-1].strip().upper() if 'back with' in content_lower else "UNKNOWN REWARDS"
             self.bot.log("AutoHunt", f"HuntBot returned! Rewards: {rewards[:100]}")
+            self.awaiting_password = False
             self.check_interval = 900
             self.last_check = time.time() - 20
             if 'huntbot' in self.bot.cmd_states:
@@ -196,6 +234,7 @@ class HuntBot(commands.Cog):
             minutes = int(reset_match.group(1)) if reset_match else 10
             wait_s = minutes * 60
             self.bot.log("AutoHunt", f"HuntBot stuck (password required). Reset in {minutes}m.")
+            self.awaiting_password = False
             self.check_interval = wait_s + 30
             self.last_check = time.time()
             if 'huntbot' in self.bot.cmd_states:
@@ -205,6 +244,10 @@ class HuntBot(commands.Cog):
 
         elif "here is your password" in content_lower or "confirm your identity" in content_lower or "link below" in content_lower:
             self.bot.is_busy = True
+            self.awaiting_password = True
+            if 'huntbot' in self.bot.cmd_states:
+                self.bot.cmd_states['huntbot']['delay'] = self.pending_retry_delay
+                self.bot.cmd_states['huntbot']['last_ran'] = time.time()
 
             img_url = None
             if message.attachments:
@@ -216,14 +259,15 @@ class HuntBot(commands.Cog):
                         break
             try:
                 import modules.nhuntbotsolver as solver
+                cash = cfg.get('cash_to_spend', 16000)
                 if self.bot.session and img_url:
                     self.bot.log("AutoHunt", "Attempting YULEESELF Solver auto-solve...")
                     answer = await solver.solveHbCaptcha(img_url, self.bot.session)
                     
                     if answer and len(answer) > 0:
                         self.bot.log("SUCCESS", f"Captcha Solved: {answer}")
-                        cash = cfg.get('cash_to_spend', 15000)
-                        await self.bot.yulee_enqueue(f"autohunt {cash} {answer}", priority=1)
+                        self.last_command_time = time.time()
+                        await self.bot.yulee_enqueue(f"huntbot {cash} {answer}", priority=1)
                         
                         uid = str(self.bot.user.id)
                         if uid in state.account_stats:
@@ -231,22 +275,25 @@ class HuntBot(commands.Cog):
                             self.bot.stats['captcha_success_count'] = self.bot.stats.get('captcha_success_count', 0) + 1
                         self.bot.is_busy = False
                     else:
-                        self.bot.log("WARN", "Could not solve captcha automatically.")
-                        # base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                        # path = os.path.join(base, "beeps", "huntbot_image_beep.mp3")
-                        # plat_settings = self.bot.config.get('platform_settings', {})
-                        # if plat_settings.get('desktop_notifications', True):
-                        #     if os.path.exists(path):
-                        #         asyncio.create_task(self._play_beep_async(path))
+                        self.bot.log("WARN", "Could not solve captcha automatically. Waiting for manual solve or reset.")
+                        self.bot.stats['current_captcha'] = {
+                            'image_url': img_url,
+                            'cash': cash,
+                            'command_template': f"huntbot {cash} {{password}}",
+                            'timestamp': time.time()
+                        }
+                        self.check_interval = 630
+                        if 'huntbot' in self.bot.cmd_states:
+                            self.bot.cmd_states['huntbot']['delay'] = self.check_interval
+                            self.bot.cmd_states['huntbot']['last_ran'] = time.time()
+                        self.bot.is_busy = False
             except Exception as e:
                 self.bot.log("ERROR", f"Solver failed: {e}")
-                # base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                # path = os.path.join(base, "beeps", "huntbot_image_beep.mp3")
-                # if os.path.exists(path):
-                #     asyncio.create_task(self._play_beep_async(path))
+                self.bot.is_busy = False
 
         elif "wrong password" in content_lower or "incorrect password" in content_lower:
             self.bot.log("AutoHunt", "Wrong password provided. Waiting for reset.")
+            self.awaiting_password = False
             self.check_interval = 630
             self.last_check = time.time()
             if 'huntbot' in self.bot.cmd_states:
@@ -254,23 +301,6 @@ class HuntBot(commands.Cog):
                 self.bot.cmd_states['huntbot']['last_ran'] = time.time()
             self.bot.is_busy = False
 
-
-    # async def _play_beep_async(self, path):
-    #     if not os.path.exists(path): return
-
-    #     if hasattr(self.bot, 'is_mobile') and self.bot.is_mobile:
-    #         try:
-    #             os.system(f'termux-media-player play "{path}"')
-    #         except:
-    #             pass
-    #         return
-
-    #     try:
-    #         from playsound3 import playsound
-    #         loop = asyncio.get_event_loop()
-    #         await loop.run_in_executor(None, lambda: playsound(path, block=False))
-    #     except:
-    #         pass
 
 async def setup(bot):
     cog = HuntBot(bot)
