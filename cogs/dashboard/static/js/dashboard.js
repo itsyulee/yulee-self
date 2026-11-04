@@ -106,40 +106,17 @@ function update(forceLogs = false) {
             lineChart.update('none');
         }
         try { renderQuests(d.quest_data, d.next_quest_timer, d); } catch(e) { console.error("Quest Render Error:", e); }
-        try { if (d.cmd_states) renderScheduler(d.cmd_states, d.boss_status); } catch(e) { console.error("Scheduler Render Error in update():", e); }
+        try { if (d.cmd_states) renderScheduler(d.cmd_states); } catch(e) { console.error("Scheduler Render Error in update():", e); }
         try { fetchSecuritySummary(); } catch(e) { console.error("Security Summary Error:", e); }
     });
 }
 
 
-function renderScheduler(states, bossStatus = null) {
+function renderScheduler(states) {
     const list = document.getElementById('schedulerList');
     if (!list) return;
     try {
         const now = Date.now() / 1000;
-        let bossCardHtml = '';
-        if (bossStatus && bossStatus.enabled) {
-            const chList = Array.isArray(bossStatus.channels) && bossStatus.channels.length
-                ? `CH: ${bossStatus.channels.join(', ')}`
-                : (bossStatus.join_all_guilds ? 'All Guilds' : 'Playing Channels');
-            const tickets = `${bossStatus.tickets ?? 3}/${bossStatus.max_tickets ?? 3}`;
-            const ticketPct = Math.min(100, Math.max(0, ((bossStatus.tickets ?? 3) / (bossStatus.max_tickets ?? 3)) * 100));
-            bossCardHtml = `
-                <div style="background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:8px 12px; display:flex; flex-direction:column; gap:6px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-                        <div style="display:flex; align-items:center; gap:8px; min-width:0;">
-                            <span style="width:8px; height:8px; border-radius:50%; background:var(--success); display:inline-block; box-shadow:0 0 5px var(--success); flex-shrink:0;"></span>
-                            <span style="color:#ddd; font-weight:600; font-size:0.85rem;">AUTO BOSS</span>
-                            <span style="color:#888; font-family:var(--font-mono); font-size:0.75rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${chList}">(${chList})</span>
-                        </div>
-                        <span style="color:var(--success); font-family:var(--font-mono); font-size:0.8rem; font-weight:bold; flex-shrink:0;">${tickets} Vé</span>
-                    </div>
-                    <div style="height:3px; background:rgba(255,255,255,0.05); border-radius:2px; overflow:hidden;">
-                        <div style="height:100%; width:${ticketPct}%; background:var(--success); transition:width 0.5s ease;"></div>
-                    </div>
-                </div>
-            `;
-        }
         const items = Object.entries(states || {}).map(([id, s]) => {
             try {
                 const lastRan = s.last_ran || 0;
@@ -152,11 +129,11 @@ function renderScheduler(states, bossStatus = null) {
             }
         }).filter(item => item !== null);
         items.sort((a, b) => (a.remaining || 0) - (b.remaining || 0));
-        if (items.length === 0 && !bossCardHtml) {
+        if (items.length === 0) {
             list.innerHTML = '<div style="color:#666; font-style:italic; font-size:0.9rem; text-align:center; padding-top:20px;">No scheduled actions</div>';
             return;
         }
-        list.innerHTML = bossCardHtml + items.map(item => {
+        list.innerHTML = items.map(item => {
             const name = item.id.toUpperCase();
             let statusHtml = '';
             let progress = 0;

@@ -8,8 +8,7 @@
     "ALARM": "#ff0000",
     "ERROR": "#ff0000",
     "SECURITY": "#ff0000",
-    "AutoHunt": "#00ffff",
-    "BOSS": "#ff9900"
+    "AutoHunt": "#00ffff"
   },
   "commands": {
     "hunt": "#ff1f1f",

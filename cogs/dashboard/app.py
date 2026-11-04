@@ -213,7 +213,6 @@ def stats():
         'weekly_checklist_timer': st.get('weekly_checklist_timer', None),
         'next_quest_timer': st.get('next_quest_timer'),
         'cmd_states': {k: {**v, 'content': '[Dynamic function]' if callable(v.get('content')) else v.get('content')} for k, v in bot.cmd_states.items()} if bot else {},
-        'boss_status': bot.get_cog('Boss').get_dashboard_status() if (bot and bot.get_cog('Boss') and hasattr(bot.get_cog('Boss'), 'get_dashboard_status')) else None,
         'gambling_stats': st.get('gambling_stats', {})
     }
     
@@ -335,23 +334,18 @@ def settings():
             return jsonify({"status": "error", "message": str(e)}), 500
     else:
         try:
-            target_path = config_path if os.path.exists(config_path) else (
-                os.path.join(state.CONFIG_DIR, 'settings.json') if account_id else None
-            )
-            if target_path and os.path.exists(target_path):
-                with open(target_path, 'r', encoding='utf-8') as f:
+            if os.path.exists(config_path):
+                with open(config_path, 'r') as f:
                     data = json.load(f)
-                if isinstance(data.get('boss'), dict):
-                    data['boss'].setdefault('channels', [])
-                else:
-                    data['boss'] = {
-                        'enabled': True,
-                        'ignore_guilds': [],
-                        'join_all_guilds': False,
-                        'join_chance': 100,
-                        'channels': []
-                    }
-                return jsonify(protect_large_ints(data))
+                    if isinstance(data.get('boss'), dict):
+                        data['boss'].setdefault('channels', [])
+                    return jsonify(protect_large_ints(data))
+
+            elif account_id:
+                global_path = os.path.join(state.CONFIG_DIR, 'settings.json')
+                if os.path.exists(global_path):
+                    with open(global_path, 'r') as f:
+                        return jsonify(protect_large_ints(json.load(f)))
             return jsonify({})
         except:
             return jsonify({})

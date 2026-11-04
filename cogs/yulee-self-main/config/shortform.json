@@ -1,0 +1,11 @@
+{
+    "hunt": "h",
+    "battle": "b",
+    "coinflip": "cf",
+    "slots": "s",
+    "huntbot": "hb",
+    "sacrifice": "sc",
+    "inventory": "inv",
+    "lootbox": "lb",
+    "crate": "wc"
+}
