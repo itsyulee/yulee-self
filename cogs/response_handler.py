@@ -183,7 +183,8 @@ class ResponseHandler(commands.Cog):
     async def _handle_cooldowns(self, content, message):
         if "slow down~" in content or "too fast for me" in content:
             wait_time = random.uniform(3.0, 5.0)
-            self.bot.throttle_until = time.time() + wait_time
+            if not self.bot.paused and self.bot.throttle_until != float('inf'):
+                self.bot.throttle_until = max(self.bot.throttle_until, time.time() + wait_time)
             self.bot.log("COOLDOWN", f"Global Throttle: pausing {round(wait_time, 1)}s")
 
     async def _handle_status_updates(self, content, message):

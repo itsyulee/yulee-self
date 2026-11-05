@@ -152,9 +152,15 @@ class YuleeHuman:
             bot.log("STEALTH", log_str)
             bot.last_stealth_log = log_str
 
+        if bot.paused or getattr(bot, 'throttle_until', 0) == float('inf'):
+            return False
+
         reaction_time = random.uniform(reaction_min, reaction_max)
         if reaction_time > 0.1:
             await asyncio.sleep(reaction_time)
+
+        if bot.paused or getattr(bot, 'throttle_until', 0) == float('inf'):
+            return False
 
         try:
             async with channel.typing():
@@ -163,7 +169,7 @@ class YuleeHuman:
                 typing_start = time.time()
 
                 while i < len(chars):
-                    if bot.paused:
+                    if bot.paused or getattr(bot, 'throttle_until', 0) == float('inf'):
                         return False
                     char = chars[i]
                     delay = random.uniform(key_delay_min, key_delay_max)
@@ -176,6 +182,9 @@ class YuleeHuman:
                 enter_delay = random.uniform(enter_delay_min, enter_delay_max)
                 await asyncio.sleep(enter_delay)
 
+                if bot.paused or getattr(bot, 'throttle_until', 0) == float('inf'):
+                    return False
+
                 total_time = round(time.time() - typing_start, 2)
                 bot.last_typing_time = total_time
 
@@ -183,6 +192,8 @@ class YuleeHuman:
                 return True
 
         except Exception:
+            if bot.paused or getattr(bot, 'throttle_until', 0) == float('inf'):
+                return False
             try:
                 await channel.send(content)
                 return True

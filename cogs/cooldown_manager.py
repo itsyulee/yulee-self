@@ -110,8 +110,8 @@ class CooldownManager:
                         }
                         cmd_id = alias_map.get(cmd_part, cmd_part)
 
-                if wait_seconds <= 15:
-                    self.bot.throttle_until = time.time() + wait_seconds + 0.5
+                if wait_seconds <= 15 and not self.bot.paused and self.bot.throttle_until != float('inf'):
+                    self.bot.throttle_until = max(self.bot.throttle_until, time.time() + wait_seconds + 0.5)
                 else:
                     pass
 

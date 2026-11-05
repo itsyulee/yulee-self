@@ -54,7 +54,7 @@ class YesCaptchaService:
             "task": {
                 "type": "HCaptchaTaskProxyless",
                 "websiteKey": self.site_key,
-                "websiteURL": "https://owobot.com",
+                "websiteURL": "https://owobot.com/captcha",
             },
             "softID": 100629,
         }

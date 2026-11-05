@@ -62,6 +62,7 @@ class Security(commands.Cog):
             "human"
         ]
         self.warning_pattern = re.compile(r'\(\s*(\d+)\s*/\s*(\d+)\s*\)')
+        self.captcha_url_pattern = re.compile(r'https?://owobot\.com/captcha(?:/\S*)?', re.I)
         self.image_captcha_keywords = [
             "pleasedmme",
             "dmme",
@@ -166,14 +167,30 @@ class Security(commands.Cog):
         return any(k in cleaned for k in keywords)
 
     def _get_captcha_url(self, message):
-        if not message.components:
+        if not getattr(message, "components", None):
             return None
+        def _walk_comp(comp):
+            url = str(getattr(comp, "url", "") or "")
+            if "owobot.com/captcha" in url:
+                return url
+            for attr in ("children", "components"):
+                children = getattr(comp, attr, None)
+                if children:
+                    for ch in children:
+                        found = _walk_comp(ch)
+                        if found:
+                            return found
+            accessory = getattr(comp, "accessory", None)
+            if accessory:
+                found = _walk_comp(accessory)
+                if found:
+                    return found
+            return None
+
         for comp in message.components:
-            if not getattr(comp, "children", None): continue
-            for child in comp.children:
-                url = str(getattr(child, "url", "") or "")
-                if "owobot.com/captcha" in url:
-                    return url
+            found = _walk_comp(comp)
+            if found:
+                return found
         return None
 
     def _image_letter_count(self, text):
@@ -215,9 +232,88 @@ class Security(commands.Cog):
             self.bot.log("ERROR", f"Image CAPTCHA needs manual solving: {e}")
             self._show_desktop_notification("Solve the image CAPTCHA manually in OwO DM.")
         finally:
-            # Stay paused until OwO explicitly confirms verification.
-            if not submitted:
-                self.bot._solving_captcha = False
+            # Always release _solving_captcha lock so subsequent retries/warnings are not blocked.
+            self.bot._solving_captcha = False
+
+    def _resume_after_verification(self, reason="Verified"):
+        self.bot.web_solver.mark_verification_done(str(self.bot.user.id))
+        self.bot._solving_captcha = False
+        try:
+            from dashboard.app import clear_captcha_challenge
+            clear_captcha_challenge(str(self.bot.user.id))
+        except Exception as e:
+            self.bot.log("ERROR", f"Failed to clear captcha challenge: {e}")
+        self.bot.paused = False
+        self.bot.throttle_until = 0.0
+        self.bot.last_sent_time = 0
+        self.bot.warmup_until = 0
+        grinding_cog = self.bot.get_cog('Grinding')
+        if grinding_cog:
+            grinding_cog.cooldowns['hunt'] = 0
+            grinding_cog.cooldowns['battle'] = 0
+            grinding_cog.cooldowns['owo'] = 0
+        self.bot.stats['captchas_solved'] = self.bot.stats.get('captchas_solved', 0) + 1
+        self.bot.log("SUCCESS", f"{reason}. Captcha solved successfully. Resuming...")
+
+    async def _run_web_captcha_solver(self, captcha_url, alert_title="CAPTCHA DETECTED", context_label="Channel"):
+        solve_link = captcha_url or "https://owobot.com/captcha"
+        sec_cfg = self.bot.config.get("security", {})
+        sol_cfg = sec_cfg.get("captcha_solver", {})
+
+        try:
+            from dashboard.app import register_captcha_challenge
+            register_captcha_challenge(
+                str(self.bot.user.id),
+                {
+                    "account_name": self.bot.username,
+                    "captcha_url": solve_link
+                }
+            )
+            self.bot.log("SYS", f"Captcha registered for dashboard display (account_id={self.bot.user.id})")
+        except Exception as e:
+            self.bot.log("ERROR", f"Failed to register captcha for dashboard: {e}")
+
+        if getattr(self.bot, '_solving_captcha', False):
+            self.bot.log("SECURITY", f"[GUARD] Captcha already being solved – skipping duplicate {context_label} captcha task.")
+            return
+
+        self.bot._solving_captcha = True
+        autosolved = False
+        try:
+            has_key = bool(
+                sol_cfg.get("yescaptcha_api_key") or
+                sol_cfg.get("nopecha_api_key") or
+                sol_cfg.get("anticaptcha_api_key") or
+                sol_cfg.get("captchaly_api_key") or
+                sol_cfg.get("api_key")
+            )
+            if sol_cfg.get("enabled", True) and has_key:
+                service_name = self.bot.web_solver.active_service_name.capitalize()
+                self.bot.log("SYS", f"Attempting {service_name} auto-solve ({context_label})...")
+                autosolved = await self.bot.web_solver.auto_verify()
+                if autosolved:
+                    self.bot.log("SUCCESS", f"{service_name} solved successfully ({context_label})!")
+                    self._show_desktop_notification(f"{service_name} solved successfully!")
+                    # Wait briefly for OwO DM confirmation; if DM did not already unpause, resume safely.
+                    await asyncio.sleep(2.0)
+                    if self.bot.paused:
+                        self._resume_after_verification(f"{service_name} web verification completed")
+                else:
+                    self.bot.log("ERROR", f"{service_name} auto-solve failed ({context_label})!")
+                    self._show_desktop_notification(f"{service_name} failed! Solve manually.")
+        finally:
+            self.bot._solving_captcha = False
+
+        if not autosolved:
+            self._send_webhook(alert_title, f"Solve: {solve_link}")
+            if not getattr(self.bot, 'is_mobile', False):
+                auto_open = sec_cfg.get("open_captcha_url_on_pc", False)
+            else:
+                auto_open = sec_cfg.get("open_captcha_url_on_mobile", False)
+            if auto_open:
+                self.bot.log("SYS", f"Queuing manual solve for {context_label} captcha...")
+                self.bot.web_solver.enqueue_manual_solve(str(self.bot.user.id), solve_link)
+                self._show_desktop_notification(f"Manual solve queued for {self.bot.username}")
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -225,23 +321,7 @@ class Security(commands.Cog):
         if (message.guild is None or isinstance(message.channel, discord.DMChannel)) and message.author.id == int(self.monitor_id):
             if (discord.utils.utcnow() - message.created_at).total_seconds() > 30: return
             if "i have verified that you are human" in message.content.lower():
-                self.bot.web_solver.mark_verification_done(str(self.bot.user.id))
-                self.bot._solving_captcha = False
-                try:
-                    from dashboard.app import clear_captcha_challenge
-                    clear_captcha_challenge(str(self.bot.user.id))
-                except Exception as e:
-                    self.bot.log("ERROR", f"Failed to clear captcha challenge: {e}")
-                self.bot.paused = False
-                self.bot.throttle_until = 0.0
-                self.bot.last_sent_time = 0
-                self.bot.warmup_until = 0
-                grinding_cog = self.bot.get_cog('Grinding')
-                if grinding_cog:
-                    grinding_cog.cooldowns['hunt'] = 0
-                    grinding_cog.cooldowns['battle'] = 0
-                    grinding_cog.cooldowns['owo'] = 0
-                self.bot.log("SUCCESS", "Verified detected in DM. Captcha solved successfully. Resuming...")
+                self._resume_after_verification("Verified detected in DM")
                 self.bot.log("INFO", "All cooldowns reset. Bot will resume in 2 seconds...")
                 await asyncio.sleep(2)
                 return
@@ -251,66 +331,16 @@ class Security(commands.Cog):
                 return
             captcha_url = self._get_captcha_url(message)
             if not captcha_url:
-                url_match = re.search(r'https?://owobot\.com/captcha/\S+', message.content)
+                url_match = self.captcha_url_pattern.search(message.content or "")
                 if url_match: captcha_url = url_match.group(0)
 
-            if captcha_url:
+            if captcha_url or self._contains_keyword(message.content or "", self.captcha_keywords):
                 self.bot.paused = True
                 self.bot.throttle_until = float('inf')
                 self.bot.log("ALARM", "LINK CAPTCHA DETECTED IN DM!")
                 await self.play_beep()
                 self._show_desktop_notification("DM Captcha detected!")
-
-                sec_cfg = self.bot.config.get("security", {})
-                sol_cfg = sec_cfg.get("captcha_solver", {})
-
-                try:
-                    from dashboard.app import register_captcha_challenge
-                    register_captcha_challenge(
-                        str(self.bot.user.id),
-                        {
-                            "account_name": self.bot.username,
-                            "captcha_url": captcha_url or "https://owobot.com/captcha"
-                        }
-                    )
-                    self.bot.log("SYS", f"Captcha registered for dashboard display (account_id={self.bot.user.id})")
-                except Exception as e:
-                    self.bot.log("ERROR", f"Failed to register captcha for dashboard: {e}")
-
-                if getattr(self.bot, '_solving_captcha', False):
-                    self.bot.log("SECURITY", "[GUARD] Captcha already being solved – skipping duplicate DM captcha task.")
-                    return
-                self.bot._solving_captcha = True
-
-                autosolved = False
-                has_key = bool(
-                    sol_cfg.get("yescaptcha_api_key") or
-                    sol_cfg.get("nopecha_api_key") or
-                    sol_cfg.get("anticaptcha_api_key") or
-                    sol_cfg.get("captchaly_api_key")
-                )
-                if sol_cfg.get("enabled", True) and has_key:
-                    service_name = self.bot.web_solver.active_service_name.capitalize()
-                    self.bot.log("SYS", f"Attempting {service_name} auto-solve for DM...")
-                    autosolved = await self.bot.web_solver.auto_verify()
-                    if autosolved:
-                        self.bot._solving_captcha = False
-                        self.bot.log("SUCCESS", f"{service_name} solved successfully (DM)!")
-                        self._show_desktop_notification(f"{service_name} solved successfully!")
-                    else:
-                        self.bot.log("ERROR", f"{service_name} auto-solve failed (DM)!")
-                        self._show_desktop_notification(f"{service_name} failed! Solve manually.")
-
-                if not autosolved:
-                    self._send_webhook("DM CAPTCHA", f"Solve link in DM: {captcha_url}")
-                    if not getattr(self.bot, 'is_mobile', False):
-                        auto_open = sec_cfg.get("open_captcha_url_on_pc", False)
-                    else:
-                        auto_open = sec_cfg.get("open_captcha_url_on_mobile", False)
-                    if auto_open:
-                        self.bot.log("SYS", "Queuing manual solve for DM captcha...")
-                        self.bot.web_solver.enqueue_manual_solve(str(self.bot.user.id), captcha_url)
-                        self._show_desktop_notification(f"Manual solve queued for {self.bot.username}")
+                await self._run_web_captcha_solver(captcha_url, alert_title="DM CAPTCHA", context_label="DM")
                 return
 
         if str(message.author.id) != self.monitor_id: return
@@ -331,14 +361,13 @@ class Security(commands.Cog):
         is_for_me = self.bot.is_message_for_me(message)
         if not is_for_me: return
 
-
         is_security_event = (
             self._contains_keyword(text_to_check, self.ban_keywords) or
             self.warning_pattern.search(text_to_check) is not None or
             (len(message.attachments) > 0 and self._contains_keyword(text_to_check, self.image_captcha_keywords)) or
             self._contains_keyword(text_to_check, self.captcha_keywords) or
             self._get_captcha_url(message) is not None or
-            re.search(r'https?://owobot\.com/captcha/\S+', text_to_check) is not None
+            self.captcha_url_pattern.search(text_to_check) is not None
         )
 
         try:
@@ -351,6 +380,8 @@ class Security(commands.Cog):
 
         if self._contains_keyword(text_to_check, self.ban_keywords):
             self.bot.paused = True
+            self.bot.throttle_until = float('inf')
+            self.bot.stats['bans_detected'] = self.bot.stats.get('bans_detected', 0) + 1
             self.bot.log("ALARM", "BAN DETECTED!")
             await self.play_beep()
             self._show_desktop_notification("Ban detected!")
@@ -368,7 +399,7 @@ class Security(commands.Cog):
             normalized = self._normalize(text_to_check)
             captcha_url = self._get_captcha_url(message)
             if not captcha_url:
-                url_match = re.search(r'https?://owobot\.com/captcha/\S+', text_to_check)
+                url_match = self.captcha_url_pattern.search(text_to_check)
                 if url_match:
                     captcha_url = url_match.group(0)
 
@@ -376,69 +407,24 @@ class Security(commands.Cog):
                 self.bot.paused = True
                 self.bot.throttle_until = float('inf')
                 self.bot.stats['last_captcha_msg'] = text_to_check[:200]
+                self.bot.stats['warnings_detected'] = self.bot.stats.get('warnings_detected', 0) + 1
                 self.bot.log("ALARM", f"CAPTCHA WARNING DETECTED ({current_warning}/{max_warnings})!")
                 await self.play_beep()
                 self._show_desktop_notification(f"Captcha warning {current_warning}/{max_warnings} detected!")
                 self._send_webhook("CAPTCHA WARNING", f"Warning {current_warning}/{max_warnings}\nMessage:\n{content}")
 
-                if captcha_url:
-                    sec_cfg = self.bot.config.get("security", {})
-                    sol_cfg = sec_cfg.get("captcha_solver", {})
-
-                    try:
-                        from dashboard.app import register_captcha_challenge
-                        register_captcha_challenge(
-                            str(self.bot.user.id),
-                            {
-                                "account_name": self.bot.username,
-                                "captcha_url": captcha_url or "https://owobot.com/captcha"
-                            }
-                        )
-                        self.bot.log("SYS", f"Captcha registered for dashboard display (account_id={self.bot.user.id})")
-                    except Exception as e:
-                        self.bot.log("ERROR", f"Failed to register captcha for dashboard: {e}")
-
-                    if getattr(self.bot, '_solving_captcha', False):
-                        self.bot.log("SECURITY", "[GUARD] Captcha already being solved – skipping duplicate warning captcha task.")
-                        return
-                    self.bot._solving_captcha = True
-
-                    autosolved = False
-                    has_key = bool(
-                        sol_cfg.get("yescaptcha_api_key") or
-                        sol_cfg.get("nopecha_api_key") or
-                        sol_cfg.get("anticaptcha_api_key") or
-                        sol_cfg.get("captchaly_api_key")
-                    )
-                    if sol_cfg.get("enabled", True) and has_key:
-                        service_name = self.bot.web_solver.active_service_name.capitalize()
-                        self.bot.log("SYS", f"Attempting {service_name} auto-solve...")
-                        autosolved = await self.bot.web_solver.auto_verify()
-                        if autosolved:
-                            self.bot._solving_captcha = False
-                            self.bot.log("SUCCESS", f"{service_name} solved successfully!")
-                            self._show_desktop_notification(f"{service_name} solved successfully!")
-                        else:
-                            self.bot.log("ERROR", f"{service_name} auto-solve failed!")
-                            self._show_desktop_notification(f"{service_name} failed! Solve manually.")
-
-                    if not autosolved:
-                        solve_link = captcha_url or "https://owobot.com/captcha"
-                        self._send_webhook("CAPTCHA WARNING", f"Solve: {solve_link}")
-                        if not getattr(self.bot, 'is_mobile', False):
-                            auto_open = sec_cfg.get("open_captcha_url_on_pc", False)
-                        else:
-                            auto_open = sec_cfg.get("open_captcha_url_on_mobile", False)
-                        if auto_open:
-                            self.bot.log("SYS", "Queuing manual solve for captcha...")
-                            self.bot.web_solver.enqueue_manual_solve(str(self.bot.user.id), captcha_url)
-                            self._show_desktop_notification(f"Manual solve queued for {self.bot.username}")
+                # Always trigger web solver on warning captcha even if button URL was not extracted
+                await self._run_web_captcha_solver(
+                    captcha_url or "https://owobot.com/captcha",
+                    alert_title="CAPTCHA WARNING",
+                    context_label=f"Warning {current_warning}/{max_warnings}"
+                )
                 return
 
         captcha_keywords_hit = self._contains_keyword(text_to_check, self.captcha_keywords)
         captcha_url = self._get_captcha_url(message)
         if not captcha_url:
-            url_match = re.search(r'https?://owobot\.com/captcha/\S+', text_to_check)
+            url_match = self.captcha_url_pattern.search(text_to_check)
             if url_match:
                 captcha_url = url_match.group(0)
 
@@ -449,58 +435,11 @@ class Security(commands.Cog):
             self.bot.log("ALARM", "CAPTCHA DETECTED!")
             await self.play_beep()
             self._show_desktop_notification("Captcha detected!")
-
-            sec_cfg = self.bot.config.get("security", {})
-            sol_cfg = sec_cfg.get("captcha_solver", {})
-
-            try:
-                from dashboard.app import register_captcha_challenge
-                register_captcha_challenge(
-                    str(self.bot.user.id),
-                    {
-                        "account_name": self.bot.username,
-                        "captcha_url": captcha_url or "https://owobot.com/captcha"
-                    }
-                )
-                self.bot.log("SYS", f"Captcha registered for dashboard display (account_id={self.bot.user.id})")
-            except Exception as e:
-                self.bot.log("ERROR", f"Failed to register captcha for dashboard: {e}")
-
-            if getattr(self.bot, '_solving_captcha', False):
-                self.bot.log("SECURITY", "[GUARD] Captcha already being solved – skipping duplicate channel captcha task.")
-                return
-            self.bot._solving_captcha = True
-
-            autosolved = False
-            has_key = bool(
-                sol_cfg.get("yescaptcha_api_key") or
-                sol_cfg.get("nopecha_api_key") or
-                sol_cfg.get("anticaptcha_api_key") or
-                sol_cfg.get("captchaly_api_key")
+            await self._run_web_captcha_solver(
+                captcha_url or "https://owobot.com/captcha",
+                alert_title="CAPTCHA DETECTED",
+                context_label="Channel"
             )
-            if sol_cfg.get("enabled", True) and has_key:
-                service_name = self.bot.web_solver.active_service_name.capitalize()
-                self.bot.log("SYS", f"Attempting {service_name} auto-solve...")
-                autosolved = await self.bot.web_solver.auto_verify()
-                if autosolved:
-                    self.bot._solving_captcha = False
-                    self.bot.log("SUCCESS", f"{service_name} solved successfully!")
-                    self._show_desktop_notification(f"{service_name} solved successfully!")
-                else:
-                    self.bot.log("ERROR", f"{service_name} auto-solve failed!")
-                    self._show_desktop_notification(f"{service_name} failed! Solve manually.")
-
-            if not autosolved:
-                solve_link = captcha_url or "https://owobot.com/captcha"
-                self._send_webhook("CAPTCHA DETECTED", f"Solve: {solve_link}")
-                if not getattr(self.bot, 'is_mobile', False):
-                    auto_open = sec_cfg.get("open_captcha_url_on_pc", False)
-                else:
-                    auto_open = sec_cfg.get("open_captcha_url_on_mobile", False)
-                if auto_open:
-                    self.bot.log("SYS", "Queuing manual solve for captcha...")
-                    self.bot.web_solver.enqueue_manual_solve(str(self.bot.user.id), captcha_url)
-                    self._show_desktop_notification(f"Manual solve queued for {self.bot.username}")
             return
 
 async def setup(bot):

@@ -92,67 +92,79 @@ class WebSolver:
             self.bot.log("ERROR", f"Captchaly balance too low: {balance}")
             return False
 
-        headers = {
+        ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+        base_headers = {
+            "User-Agent": ua
+        }
+        discord_headers = {
             "Authorization": self.bot.token,
             "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            "User-Agent": ua
         }
 
-        async with aiohttp.ClientSession(headers=headers) as session:
+        for attempt in range(max(1, tries)):
             try:
-                auth_payload = {
-                    "authorize": True,
-                    "permissions": "0",
-                    "integration_type": 0,
-                    "location_context": {"guild_id": "10000", "channel_id": "10000", "channel_type": 10000}
-                }
-                async with session.post(self.auth_url, json=auth_payload) as resp:
-                    if resp.status != 200:
-                        return False
-                    auth_data = await resp.json()
-                    redirect_url = auth_data.get("location")
+                timeout = aiohttp.ClientTimeout(total=30)
+                async with aiohttp.ClientSession(headers=base_headers, timeout=timeout) as session:
+                    auth_payload = {
+                        "authorize": True,
+                        "permissions": "0",
+                        "integration_type": 0,
+                        "location_context": {"guild_id": "10000", "channel_id": "10000", "channel_type": 10000}
+                    }
+                    async with session.post(self.auth_url, json=auth_payload, headers=discord_headers) as resp:
+                        if resp.status != 200:
+                            self.bot.log("ERROR", f"Discord OAuth failed (Status {resp.status}, Attempt {attempt+1}/{tries})")
+                            await asyncio.sleep(2)
+                            continue
+                        auth_data = await resp.json()
+                        redirect_url = auth_data.get("location")
 
-                if redirect_url:
-                    async with session.get(redirect_url) as r:
-                        pass
+                    if redirect_url:
+                        async with session.get(redirect_url) as r:
+                            pass
 
-                async with session.get("https://owobot.com/captcha") as captcha_resp:
-                    if captcha_resp.status != 200:
-                        self.bot.log("ERROR", "Failed to visit captcha page.")
-                        return False
+                    async with session.get("https://owobot.com/captcha") as captcha_resp:
+                        if captcha_resp.status != 200:
+                            self.bot.log("ERROR", f"Failed to visit captcha page (Status {captcha_resp.status}, Attempt {attempt+1}/{tries}).")
+                            await asyncio.sleep(2)
+                            continue
 
-                async with session.get("https://owobot.com/api/auth") as auth_check:
-                    if auth_check.status != 200:
-                        self.bot.log("ERROR", "Auth session check failed.")
-                        return False
+                    async with session.get("https://owobot.com/api/auth") as auth_check:
+                        if auth_check.status != 200:
+                            self.bot.log("ERROR", f"Auth session check failed (Status {auth_check.status}, Attempt {attempt+1}/{tries}).")
+                            await asyncio.sleep(2)
+                            continue
 
-                solution = await self.solve_hcaptcha(tries)
-                if not solution:
-                    return False
+                    solution = await self.solve_hcaptcha(retries=2)
+                    if not solution:
+                        self.bot.log("ERROR", f"Failed to obtain hCaptcha token (Attempt {attempt+1}/{tries}).")
+                        await asyncio.sleep(2)
+                        continue
 
-                verify_headers = {
-                    "Referer": "https://owobot.com/captcha",
-                    "Origin": "https://owobot.com",
-                    "Accept": "application/json, text/plain, */*",
-                    "Content-Type": "application/json",
-                }
-                async with session.post(
-                    "https://owobot.com/api/captcha/verify",
-                    json={"token": solution},
-                    headers=verify_headers
-                ) as verify_resp:
-                    if verify_resp.status == 200:
-                        self.bot.log("SUCCESS", "Captcha verified successfully.")
-                        self.mark_verification_done(str(self.bot.user.id))
-                        return True
-                    else:
-                        error_text = await verify_resp.text()
-                        self.bot.log("ERROR", f"Verification failed (Status {verify_resp.status}): {error_text}")
-                        return False
-
+                    verify_headers = {
+                        "Referer": "https://owobot.com/captcha",
+                        "Origin": "https://owobot.com",
+                        "Accept": "application/json, text/plain, */*",
+                        "Content-Type": "application/json",
+                    }
+                    async with session.post(
+                        "https://owobot.com/api/captcha/verify",
+                        json={"token": solution},
+                        headers=verify_headers
+                    ) as verify_resp:
+                        if verify_resp.status == 200:
+                            self.bot.log("SUCCESS", "Captcha verified successfully.")
+                            self.mark_verification_done(str(self.bot.user.id))
+                            return True
+                        else:
+                            error_text = await verify_resp.text()
+                            self.bot.log("ERROR", f"Verification failed (Status {verify_resp.status}, Attempt {attempt+1}/{tries}): {error_text}")
+                            await asyncio.sleep(2)
             except Exception as e:
-                self.bot.log("ERROR", f"Auto-verification failed: {e}")
-                return False
+                self.bot.log("ERROR", f"Auto-verification attempt {attempt+1}/{tries} failed: {e}")
+                await asyncio.sleep(2)
+        return False
 
     @classmethod
     def enqueue_manual_solve(cls, bot_id, captcha_url=None):

@@ -39,9 +39,12 @@ import socket
 _original_getaddrinfo = socket.getaddrinfo
 
 def patched_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
-    if host == 'owobot.com':
-        return [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('104.21.35.189', port))]
-    return _original_getaddrinfo(host, port, family, type, proto, flags)
+    try:
+        return _original_getaddrinfo(host, port, family, type, proto, flags)
+    except socket.gaierror:
+        if host == 'owobot.com':
+            return [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('104.21.35.189', port))]
+        raise
 
 socket.getaddrinfo = patched_getaddrinfo
 
@@ -212,30 +215,7 @@ def stats():
         'weekly_checklist_data': st.get('weekly_checklist_data', []),
         'weekly_checklist_timer': st.get('weekly_checklist_timer', None),
         'next_quest_timer': st.get('next_quest_timer'),
-        'cmd_states': (lambda b: (
-            (lambda boss_st: {
-                **(
-                    {
-                        f"autoboss ({boss_st['tickets']}/3 vé · {'CH: ' + ', '.join(boss_st['channels']) if boss_st.get('channels') else ('All Guilds' if boss_st.get('join_all_guilds') else 'Default')})": {
-                            'content': '',
-                            'priority': 1,
-                            'delay': 72000,
-                            'last_ran': time.time(),
-                            'in_queue': boss_st['tickets'] > 0,
-                            'is_boss': True,
-                            'tickets': boss_st['tickets'],
-                            'max_tickets': 3,
-                            'channels': boss_st.get('channels', []),
-                            'last_reset': boss_st.get('last_reset', 0)
-                        }
-                    }
-                    if (boss_st and boss_st.get('enabled', True))
-                    else {}
-                ),
-                **{k: {**v, 'content': '[Dynamic function]' if callable(v.get('content')) else v.get('content')} for k, v in b.cmd_states.items()}
-            })(b.get_cog('Boss').get_dashboard_status() if (b.get_cog('Boss') and hasattr(b.get_cog('Boss'), 'get_dashboard_status')) else None)
-        ))(bot) if bot else {},
-        'boss_status': bot.get_cog('Boss').get_dashboard_status() if (bot and bot.get_cog('Boss') and hasattr(bot.get_cog('Boss'), 'get_dashboard_status')) else None,
+        'cmd_states': {k: {**v, 'content': '[Dynamic function]' if callable(v.get('content')) else v.get('content')} for k, v in bot.cmd_states.items()} if bot else {},
         'gambling_stats': st.get('gambling_stats', {})
     }
     
@@ -357,23 +337,16 @@ def settings():
             return jsonify({"status": "error", "message": str(e)}), 500
     else:
         try:
-            target_path = config_path if os.path.exists(config_path) else (
-                os.path.join(state.CONFIG_DIR, 'settings.json') if account_id else None
-            )
-            if target_path and os.path.exists(target_path):
-                with open(target_path, 'r', encoding='utf-8') as f:
+            if os.path.exists(config_path):
+                with open(config_path, 'r') as f:
                     data = json.load(f)
-                if isinstance(data.get('boss'), dict):
-                    data['boss'].setdefault('channels', [])
-                else:
-                    data['boss'] = {
-                        'enabled': True,
-                        'ignore_guilds': [],
-                        'join_all_guilds': False,
-                        'join_chance': 100,
-                        'channels': []
-                    }
-                return jsonify(protect_large_ints(data))
+                    return jsonify(protect_large_ints(data))
+
+            elif account_id:
+                global_path = os.path.join(state.CONFIG_DIR, 'settings.json')
+                if os.path.exists(global_path):
+                    with open(global_path, 'r') as f:
+                        return jsonify(protect_large_ints(json.load(f)))
             return jsonify({})
         except:
             return jsonify({})
